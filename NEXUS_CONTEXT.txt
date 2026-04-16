@@ -1,0 +1,3956 @@
+# NEXUS OS - CURRENT CODEBASE
+Last Updated: 2026-04-16T02:26:07.275457
+
+## FILE: .env.example
+```example
+APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+# APP_MAINTENANCE_STORE=database
+
+# PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=sqlite
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=laravel
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+# CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=log
+MAIL_SCHEME=null
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+VITE_APP_NAME="${APP_NAME}"
+
+```
+
+## FILE: composer.json
+```json
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The skeleton application for the Laravel framework.",
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^13.0",
+        "laravel/tinker": "^3.0"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel/pail": "^1.2.5",
+        "laravel/pint": "^1.27",
+        "laravel/sail": "^1.57",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^12.5.12"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm install --ignore-scripts",
+            "npm run build"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
+
+```
+
+## FILE: package-lock.json
+```json
+{
+    "name": "html",
+    "lockfileVersion": 3,
+    "requires": true,
+    "packages": {
+        "": {
+            "devDependencies": {
+                "@tailwindcss/vite": "^4.2.2",
+                "autoprefixer": "^10.5.0",
+                "concurrently": "^9.0.1",
+                "laravel-vite-plugin": "^3.0.0",
+                "postcss": "^8.5.10",
+                "tailwindcss": "^4.2.2",
+                "vite": "^8.0.0"
+            }
+        },
+        "node_modules/@emnapi/core": {
+            "version": "1.9.2",
+            "resolved": "https://registry.npmjs.org/@emnapi/core/-/core-1.9.2.tgz",
+            "integrity": "sha512-UC+ZhH3XtczQYfOlu3lNEkdW/p4dsJ1r/bP7H8+rhao3TTTMO1ATq/4DdIi23XuGoFY+Cz0JmCbdVl0hz9jZcA==",
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "dependencies": {
+                "@emnapi/wasi-threads": "1.2.1",
+                "tslib": "^2.4.0"
+            }
+        },
+        "node_modules/@emnapi/runtime": {
+            "version": "1.9.2",
+            "resolved": "https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.9.2.tgz",
+            "integrity": "sha512-3U4+MIWHImeyu1wnmVygh5WlgfYDtyf0k8AbLhMFxOipihf6nrWC4syIm/SwEeec0mNSafiiNnMJwbza/Is6Lw==",
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "dependencies": {
+                "tslib": "^2.4.0"
+            }
+        },
+        "node_modules/@emnapi/wasi-threads": {
+            "version": "1.2.1",
+            "resolved": "https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.2.1.tgz",
+            "integrity": "sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==",
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "dependencies": {
+                "tslib": "^2.4.0"
+            }
+        },
+        "node_modules/@jridgewell/gen-mapping": {
+            "version": "0.3.13",
+            "resolved": "https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz",
+            "integrity": "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "@jridgewell/sourcemap-codec": "^1.5.0",
+                "@jridgewell/trace-mapping": "^0.3.24"
+            }
+        },
+        "node_modules/@jridgewell/remapping": {
+            "version": "2.3.5",
+            "resolved": "https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz",
+            "integrity": "sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "@jridgewell/gen-mapping": "^0.3.5",
+                "@jridgewell/trace-mapping": "^0.3.24"
+            }
+        },
+        "node_modules/@jridgewell/resolve-uri": {
+            "version": "3.1.2",
+            "resolved": "https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz",
+            "integrity": "sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=6.0.0"
+            }
+        },
+        "node_modules/@jridgewell/sourcemap-codec": {
+            "version": "1.5.5",
+            "resolved": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz",
+            "integrity": "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==",
+            "dev": true,
+            "license": "MIT"
+        },
+        "node_modules/@jridgewell/trace-mapping": {
+            "version": "0.3.31",
+            "resolved": "https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz",
+            "integrity": "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "@jridgewell/resolve-uri": "^3.1.0",
+                "@jridgewell/sourcemap-codec": "^1.4.14"
+            }
+        },
+        "node_modules/@napi-rs/wasm-runtime": {
+            "version": "1.1.4",
+            "resolved": "https://registry.npmjs.org/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.4.tgz",
+            "integrity": "sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow==",
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "dependencies": {
+                "@tybys/wasm-util": "^0.10.1"
+            },
+            "funding": {
+                "type": "github",
+                "url": "https://github.com/sponsors/Brooooooklyn"
+            },
+            "peerDependencies": {
+                "@emnapi/core": "^1.7.1",
+                "@emnapi/runtime": "^1.7.1"
+            }
+        },
+        "node_modules/@oxc-project/types": {
+            "version": "0.124.0",
+            "resolved": "https://registry.npmjs.org/@oxc-project/types/-/types-0.124.0.tgz",
+            "integrity": "sha512-VBFWMTBvHxS11Z5Lvlr3IWgrwhMTXV+Md+EQF0Xf60+wAdsGFTBx7X7K/hP4pi8N7dcm1RvcHwDxZ16Qx8keUg==",
+            "dev": true,
+            "license": "MIT",
+            "funding": {
+                "url": "https://github.com/sponsors/Boshen"
+            }
+        },
+        "node_modules/@rolldown/binding-android-arm64": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.0.0-rc.15.tgz",
+            "integrity": "sha512-YYe6aWruPZDtHNpwu7+qAHEMbQ/yRl6atqb/AhznLTnD3UY99Q1jE7ihLSahNWkF4EqRPVC4SiR4O0UkLK02tA==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "android"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-darwin-arm64": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.0.0-rc.15.tgz",
+            "integrity": "sha512-oArR/ig8wNTPYsXL+Mzhs0oxhxfuHRfG7Ikw7jXsw8mYOtk71W0OkF2VEVh699pdmzjPQsTjlD1JIOoHkLP1Fg==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "darwin"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-darwin-x64": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.0.0-rc.15.tgz",
+            "integrity": "sha512-YzeVqOqjPYvUbJSWJ4EDL8ahbmsIXQpgL3JVipmN+MX0XnXMeWomLN3Fb+nwCmP/jfyqte5I3XRSm7OfQrbyxw==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "darwin"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-freebsd-x64": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.0.0-rc.15.tgz",
+            "integrity": "sha512-9Erhx956jeQ0nNTyif1+QWAXDRD38ZNjr//bSHrt6wDwB+QkAfl2q6Mn1k6OBPerznjRmbM10lgRb1Pli4xZPw==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "freebsd"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-linux-arm-gnueabihf": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.0.0-rc.15.tgz",
+            "integrity": "sha512-cVwk0w8QbZJGTnP/AHQBs5yNwmpgGYStL88t4UIaqcvYJWBfS0s3oqVLZPwsPU6M0zlW4GqjP0Zq5MnAGwFeGA==",
+            "cpu": [
+                "arm"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-linux-arm64-gnu": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.0.0-rc.15.tgz",
+            "integrity": "sha512-eBZ/u8iAK9SoHGanqe/jrPnY0JvBN6iXbVOsbO38mbz+ZJsaobExAm1Iu+rxa4S1l2FjG0qEZn4Rc6X8n+9M+w==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "libc": [
+                "glibc"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-linux-arm64-musl": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.0.0-rc.15.tgz",
+            "integrity": "sha512-ZvRYMGrAklV9PEkgt4LQM6MjQX2P58HPAuecwYObY2DhS2t35R0I810bKi0wmaYORt6m/2Sm+Z+nFgb0WhXNcQ==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "libc": [
+                "musl"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-linux-ppc64-gnu": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.0.0-rc.15.tgz",
+            "integrity": "sha512-VDpgGBzgfg5hLg+uBpCLoFG5kVvEyafmfxGUV0UHLcL5irxAK7PKNeC2MwClgk6ZAiNhmo9FLhRYgvMmedLtnQ==",
+            "cpu": [
+                "ppc64"
+            ],
+            "dev": true,
+            "libc": [
+                "glibc"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-linux-s390x-gnu": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.0.0-rc.15.tgz",
+            "integrity": "sha512-y1uXY3qQWCzcPgRJATPSOUP4tCemh4uBdY7e3EZbVwCJTY3gLJWnQABgeUetvED+bt1FQ01OeZwvhLS2bpNrAQ==",
+            "cpu": [
+                "s390x"
+            ],
+            "dev": true,
+            "libc": [
+                "glibc"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-linux-x64-gnu": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.0.0-rc.15.tgz",
+            "integrity": "sha512-023bTPBod7J3Y/4fzAN6QtpkSABR0rigtrwaP+qSEabUh5zf6ELr9Nc7GujaROuPY3uwdSIXWrvhn1KxOvurWA==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "libc": [
+                "glibc"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-linux-x64-musl": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.0.0-rc.15.tgz",
+            "integrity": "sha512-witB2O0/hU4CgfOOKUoeFgQ4GktPi1eEbAhaLAIpgD6+ZnhcPkUtPsoKKHRzmOoWPZue46IThdSgdo4XneOLYw==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "libc": [
+                "musl"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-openharmony-arm64": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.0.0-rc.15.tgz",
+            "integrity": "sha512-UCL68NJ0Ud5zRipXZE9dF5PmirzJE4E4BCIOOssEnM7wLDsxjc6Qb0sGDxTNRTP53I6MZpygyCpY8Aa8sPfKPg==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "openharmony"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-wasm32-wasi": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-wasm32-wasi/-/binding-wasm32-wasi-1.0.0-rc.15.tgz",
+            "integrity": "sha512-ApLruZq/ig+nhaE7OJm4lDjayUnOHVUa77zGeqnqZ9pn0ovdVbbNPerVibLXDmWeUZXjIYIT8V3xkT58Rm9u5Q==",
+            "cpu": [
+                "wasm32"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "dependencies": {
+                "@emnapi/core": "1.9.2",
+                "@emnapi/runtime": "1.9.2",
+                "@napi-rs/wasm-runtime": "^1.1.3"
+            },
+            "engines": {
+                "node": ">=14.0.0"
+            }
+        },
+        "node_modules/@rolldown/binding-win32-arm64-msvc": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.0.0-rc.15.tgz",
+            "integrity": "sha512-KmoUoU7HnN+Si5YWJigfTws1jz1bKBYDQKdbLspz0UaqjjFkddHsqorgiW1mxcAj88lYUE6NC/zJNwT+SloqtA==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "win32"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/binding-win32-x64-msvc": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.0.0-rc.15.tgz",
+            "integrity": "sha512-3P2A8L+x75qavWLe/Dll3EYBJLQmtkJN8rfh+U/eR3MqMgL/h98PhYI+JFfXuDPgPeCB7iZAKiqii5vqOvnA0g==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "win32"
+            ],
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            }
+        },
+        "node_modules/@rolldown/pluginutils": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.0-rc.15.tgz",
+            "integrity": "sha512-UromN0peaE53IaBRe9W7CjrZgXl90fqGpK+mIZbA3qSTeYqg3pqpROBdIPvOG3F5ereDHNwoHBI2e50n1BDr1g==",
+            "dev": true,
+            "license": "MIT"
+        },
+        "node_modules/@tailwindcss/node": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/node/-/node-4.2.2.tgz",
+            "integrity": "sha512-pXS+wJ2gZpVXqFaUEjojq7jzMpTGf8rU6ipJz5ovJV6PUGmlJ+jvIwGrzdHdQ80Sg+wmQxUFuoW1UAAwHNEdFA==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "@jridgewell/remapping": "^2.3.5",
+                "enhanced-resolve": "^5.19.0",
+                "jiti": "^2.6.1",
+                "lightningcss": "1.32.0",
+                "magic-string": "^0.30.21",
+                "source-map-js": "^1.2.1",
+                "tailwindcss": "4.2.2"
+            }
+        },
+        "node_modules/@tailwindcss/oxide": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide/-/oxide-4.2.2.tgz",
+            "integrity": "sha512-qEUA07+E5kehxYp9BVMpq9E8vnJuBHfJEC0vPC5e7iL/hw7HR61aDKoVoKzrG+QKp56vhNZe4qwkRmMC0zDLvg==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">= 20"
+            },
+            "optionalDependencies": {
+                "@tailwindcss/oxide-android-arm64": "4.2.2",
+                "@tailwindcss/oxide-darwin-arm64": "4.2.2",
+                "@tailwindcss/oxide-darwin-x64": "4.2.2",
+                "@tailwindcss/oxide-freebsd-x64": "4.2.2",
+                "@tailwindcss/oxide-linux-arm-gnueabihf": "4.2.2",
+                "@tailwindcss/oxide-linux-arm64-gnu": "4.2.2",
+                "@tailwindcss/oxide-linux-arm64-musl": "4.2.2",
+                "@tailwindcss/oxide-linux-x64-gnu": "4.2.2",
+                "@tailwindcss/oxide-linux-x64-musl": "4.2.2",
+                "@tailwindcss/oxide-wasm32-wasi": "4.2.2",
+                "@tailwindcss/oxide-win32-arm64-msvc": "4.2.2",
+                "@tailwindcss/oxide-win32-x64-msvc": "4.2.2"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-android-arm64": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-android-arm64/-/oxide-android-arm64-4.2.2.tgz",
+            "integrity": "sha512-dXGR1n+P3B6748jZO/SvHZq7qBOqqzQ+yFrXpoOWWALWndF9MoSKAT3Q0fYgAzYzGhxNYOoysRvYlpixRBBoDg==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "android"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-darwin-arm64": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-darwin-arm64/-/oxide-darwin-arm64-4.2.2.tgz",
+            "integrity": "sha512-iq9Qjr6knfMpZHj55/37ouZeykwbDqF21gPFtfnhCCKGDcPI/21FKC9XdMO/XyBM7qKORx6UIhGgg6jLl7BZlg==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "darwin"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-darwin-x64": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-darwin-x64/-/oxide-darwin-x64-4.2.2.tgz",
+            "integrity": "sha512-BlR+2c3nzc8f2G639LpL89YY4bdcIdUmiOOkv2GQv4/4M0vJlpXEa0JXNHhCHU7VWOKWT/CjqHdTP8aUuDJkuw==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "darwin"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-freebsd-x64": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-freebsd-x64/-/oxide-freebsd-x64-4.2.2.tgz",
+            "integrity": "sha512-YUqUgrGMSu2CDO82hzlQ5qSb5xmx3RUrke/QgnoEx7KvmRJHQuZHZmZTLSuuHwFf0DJPybFMXMYf+WJdxHy/nQ==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "freebsd"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-linux-arm-gnueabihf": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-linux-arm-gnueabihf/-/oxide-linux-arm-gnueabihf-4.2.2.tgz",
+            "integrity": "sha512-FPdhvsW6g06T9BWT0qTwiVZYE2WIFo2dY5aCSpjG/S/u1tby+wXoslXS0kl3/KXnULlLr1E3NPRRw0g7t2kgaQ==",
+            "cpu": [
+                "arm"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-linux-arm64-gnu": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-linux-arm64-gnu/-/oxide-linux-arm64-gnu-4.2.2.tgz",
+            "integrity": "sha512-4og1V+ftEPXGttOO7eCmW7VICmzzJWgMx+QXAJRAhjrSjumCwWqMfkDrNu1LXEQzNAwz28NCUpucgQPrR4S2yw==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "libc": [
+                "glibc"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-linux-arm64-musl": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-linux-arm64-musl/-/oxide-linux-arm64-musl-4.2.2.tgz",
+            "integrity": "sha512-oCfG/mS+/+XRlwNjnsNLVwnMWYH7tn/kYPsNPh+JSOMlnt93mYNCKHYzylRhI51X+TbR+ufNhhKKzm6QkqX8ag==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "libc": [
+                "musl"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-linux-x64-gnu": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-linux-x64-gnu/-/oxide-linux-x64-gnu-4.2.2.tgz",
+            "integrity": "sha512-rTAGAkDgqbXHNp/xW0iugLVmX62wOp2PoE39BTCGKjv3Iocf6AFbRP/wZT/kuCxC9QBh9Pu8XPkv/zCZB2mcMg==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "libc": [
+                "glibc"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-linux-x64-musl": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-linux-x64-musl/-/oxide-linux-x64-musl-4.2.2.tgz",
+            "integrity": "sha512-XW3t3qwbIwiSyRCggeO2zxe3KWaEbM0/kW9e8+0XpBgyKU4ATYzcVSMKteZJ1iukJ3HgHBjbg9P5YPRCVUxlnQ==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "libc": [
+                "musl"
+            ],
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-wasm32-wasi": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-wasm32-wasi/-/oxide-wasm32-wasi-4.2.2.tgz",
+            "integrity": "sha512-eKSztKsmEsn1O5lJ4ZAfyn41NfG7vzCg496YiGtMDV86jz1q/irhms5O0VrY6ZwTUkFy/EKG3RfWgxSI3VbZ8Q==",
+            "bundleDependencies": [
+                "@napi-rs/wasm-runtime",
+                "@emnapi/core",
+                "@emnapi/runtime",
+                "@tybys/wasm-util",
+                "@emnapi/wasi-threads",
+                "tslib"
+            ],
+            "cpu": [
+                "wasm32"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "dependencies": {
+                "@emnapi/core": "^1.8.1",
+                "@emnapi/runtime": "^1.8.1",
+                "@emnapi/wasi-threads": "^1.1.0",
+                "@napi-rs/wasm-runtime": "^1.1.1",
+                "@tybys/wasm-util": "^0.10.1",
+                "tslib": "^2.8.1"
+            },
+            "engines": {
+                "node": ">=14.0.0"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-win32-arm64-msvc": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-win32-arm64-msvc/-/oxide-win32-arm64-msvc-4.2.2.tgz",
+            "integrity": "sha512-qPmaQM4iKu5mxpsrWZMOZRgZv1tOZpUm+zdhhQP0VhJfyGGO3aUKdbh3gDZc/dPLQwW4eSqWGrrcWNBZWUWaXQ==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "win32"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/oxide-win32-x64-msvc": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/oxide-win32-x64-msvc/-/oxide-win32-x64-msvc-4.2.2.tgz",
+            "integrity": "sha512-1T/37VvI7WyH66b+vqHj/cLwnCxt7Qt3WFu5Q8hk65aOvlwAhs7rAp1VkulBJw/N4tMirXjVnylTR72uI0HGcA==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "win32"
+            ],
+            "engines": {
+                "node": ">= 20"
+            }
+        },
+        "node_modules/@tailwindcss/vite": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/@tailwindcss/vite/-/vite-4.2.2.tgz",
+            "integrity": "sha512-mEiF5HO1QqCLXoNEfXVA1Tzo+cYsrqV7w9Juj2wdUFyW07JRenqMG225MvPwr3ZD9N1bFQj46X7r33iHxLUW0w==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "@tailwindcss/node": "4.2.2",
+                "@tailwindcss/oxide": "4.2.2",
+                "tailwindcss": "4.2.2"
+            },
+            "peerDependencies": {
+                "vite": "^5.2.0 || ^6 || ^7 || ^8"
+            }
+        },
+        "node_modules/@tybys/wasm-util": {
+            "version": "0.10.1",
+            "resolved": "https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.1.tgz",
+            "integrity": "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==",
+            "dev": true,
+            "license": "MIT",
+            "optional": true,
+            "dependencies": {
+                "tslib": "^2.4.0"
+            }
+        },
+        "node_modules/ansi-regex": {
+            "version": "5.0.1",
+            "resolved": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-5.0.1.tgz",
+            "integrity": "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=8"
+            }
+        },
+        "node_modules/ansi-styles": {
+            "version": "4.3.0",
+            "resolved": "https://registry.npmjs.org/ansi-styles/-/ansi-styles-4.3.0.tgz",
+            "integrity": "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "color-convert": "^2.0.1"
+            },
+            "engines": {
+                "node": ">=8"
+            },
+            "funding": {
+                "url": "https://github.com/chalk/ansi-styles?sponsor=1"
+            }
+        },
+        "node_modules/autoprefixer": {
+            "version": "10.5.0",
+            "resolved": "https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.5.0.tgz",
+            "integrity": "sha512-FMhOoZV4+qR6aTUALKX2rEqGG+oyATvwBt9IIzVR5rMa2HRWPkxf+P+PAJLD1I/H5/II+HuZcBJYEFBpq39ong==",
+            "dev": true,
+            "funding": [
+                {
+                    "type": "opencollective",
+                    "url": "https://opencollective.com/postcss/"
+                },
+                {
+                    "type": "tidelift",
+                    "url": "https://tidelift.com/funding/github/npm/autoprefixer"
+                },
+                {
+                    "type": "github",
+                    "url": "https://github.com/sponsors/ai"
+                }
+            ],
+            "license": "MIT",
+            "dependencies": {
+                "browserslist": "^4.28.2",
+                "caniuse-lite": "^1.0.30001787",
+                "fraction.js": "^5.3.4",
+                "picocolors": "^1.1.1",
+                "postcss-value-parser": "^4.2.0"
+            },
+            "bin": {
+                "autoprefixer": "bin/autoprefixer"
+            },
+            "engines": {
+                "node": "^10 || ^12 || >=14"
+            },
+            "peerDependencies": {
+                "postcss": "^8.1.0"
+            }
+        },
+        "node_modules/baseline-browser-mapping": {
+            "version": "2.10.19",
+            "resolved": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.10.19.tgz",
+            "integrity": "sha512-qCkNLi2sfBOn8XhZQ0FXsT1Ki/Yo5P90hrkRamVFRS7/KV9hpfA4HkoWNU152+8w0zPjnxo5psx5NL3PSGgv5g==",
+            "dev": true,
+            "license": "Apache-2.0",
+            "bin": {
+                "baseline-browser-mapping": "dist/cli.cjs"
+            },
+            "engines": {
+                "node": ">=6.0.0"
+            }
+        },
+        "node_modules/browserslist": {
+            "version": "4.28.2",
+            "resolved": "https://registry.npmjs.org/browserslist/-/browserslist-4.28.2.tgz",
+            "integrity": "sha512-48xSriZYYg+8qXna9kwqjIVzuQxi+KYWp2+5nCYnYKPTr0LvD89Jqk2Or5ogxz0NUMfIjhh2lIUX/LyX9B4oIg==",
+            "dev": true,
+            "funding": [
+                {
+                    "type": "opencollective",
+                    "url": "https://opencollective.com/browserslist"
+                },
+                {
+                    "type": "tidelift",
+                    "url": "https://tidelift.com/funding/github/npm/browserslist"
+                },
+                {
+                    "type": "github",
+                    "url": "https://github.com/sponsors/ai"
+                }
+            ],
+            "license": "MIT",
+            "dependencies": {
+                "baseline-browser-mapping": "^2.10.12",
+                "caniuse-lite": "^1.0.30001782",
+                "electron-to-chromium": "^1.5.328",
+                "node-releases": "^2.0.36",
+                "update-browserslist-db": "^1.2.3"
+            },
+            "bin": {
+                "browserslist": "cli.js"
+            },
+            "engines": {
+                "node": "^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7"
+            }
+        },
+        "node_modules/caniuse-lite": {
+            "version": "1.0.30001788",
+            "resolved": "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001788.tgz",
+            "integrity": "sha512-6q8HFp+lOQtcf7wBK+uEenxymVWkGKkjFpCvw5W25cmMwEDU45p1xQFBQv8JDlMMry7eNxyBaR+qxgmTUZkIRQ==",
+            "dev": true,
+            "funding": [
+                {
+                    "type": "opencollective",
+                    "url": "https://opencollective.com/browserslist"
+                },
+                {
+                    "type": "tidelift",
+                    "url": "https://tidelift.com/funding/github/npm/caniuse-lite"
+                },
+                {
+                    "type": "github",
+                    "url": "https://github.com/sponsors/ai"
+                }
+            ],
+            "license": "CC-BY-4.0"
+        },
+        "node_modules/chalk": {
+            "version": "4.1.2",
+            "resolved": "https://registry.npmjs.org/chalk/-/chalk-4.1.2.tgz",
+            "integrity": "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "ansi-styles": "^4.1.0",
+                "supports-color": "^7.1.0"
+            },
+            "engines": {
+                "node": ">=10"
+            },
+            "funding": {
+                "url": "https://github.com/chalk/chalk?sponsor=1"
+            }
+        },
+        "node_modules/chalk/node_modules/supports-color": {
+            "version": "7.2.0",
+            "resolved": "https://registry.npmjs.org/supports-color/-/supports-color-7.2.0.tgz",
+            "integrity": "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "has-flag": "^4.0.0"
+            },
+            "engines": {
+                "node": ">=8"
+            }
+        },
+        "node_modules/cliui": {
+            "version": "8.0.1",
+            "resolved": "https://registry.npmjs.org/cliui/-/cliui-8.0.1.tgz",
+            "integrity": "sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==",
+            "dev": true,
+            "license": "ISC",
+            "dependencies": {
+                "string-width": "^4.2.0",
+                "strip-ansi": "^6.0.1",
+                "wrap-ansi": "^7.0.0"
+            },
+            "engines": {
+                "node": ">=12"
+            }
+        },
+        "node_modules/color-convert": {
+            "version": "2.0.1",
+            "resolved": "https://registry.npmjs.org/color-convert/-/color-convert-2.0.1.tgz",
+            "integrity": "sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "color-name": "~1.1.4"
+            },
+            "engines": {
+                "node": ">=7.0.0"
+            }
+        },
+        "node_modules/color-name": {
+            "version": "1.1.4",
+            "resolved": "https://registry.npmjs.org/color-name/-/color-name-1.1.4.tgz",
+            "integrity": "sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==",
+            "dev": true,
+            "license": "MIT"
+        },
+        "node_modules/concurrently": {
+            "version": "9.2.1",
+            "resolved": "https://registry.npmjs.org/concurrently/-/concurrently-9.2.1.tgz",
+            "integrity": "sha512-fsfrO0MxV64Znoy8/l1vVIjjHa29SZyyqPgQBwhiDcaW8wJc2W3XWVOGx4M3oJBnv/zdUZIIp1gDeS98GzP8Ng==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "chalk": "4.1.2",
+                "rxjs": "7.8.2",
+                "shell-quote": "1.8.3",
+                "supports-color": "8.1.1",
+                "tree-kill": "1.2.2",
+                "yargs": "17.7.2"
+            },
+            "bin": {
+                "conc": "dist/bin/concurrently.js",
+                "concurrently": "dist/bin/concurrently.js"
+            },
+            "engines": {
+                "node": ">=18"
+            },
+            "funding": {
+                "url": "https://github.com/open-cli-tools/concurrently?sponsor=1"
+            }
+        },
+        "node_modules/detect-libc": {
+            "version": "2.1.2",
+            "resolved": "https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz",
+            "integrity": "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==",
+            "dev": true,
+            "license": "Apache-2.0",
+            "engines": {
+                "node": ">=8"
+            }
+        },
+        "node_modules/electron-to-chromium": {
+            "version": "1.5.336",
+            "resolved": "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.336.tgz",
+            "integrity": "sha512-AbH9q9J455r/nLmdNZes0G0ZKcRX73FicwowalLs6ijwOmCJSRRrLX63lcAlzy9ux3dWK1w1+1nsBJEWN11hcQ==",
+            "dev": true,
+            "license": "ISC"
+        },
+        "node_modules/emoji-regex": {
+            "version": "8.0.0",
+            "resolved": "https://registry.npmjs.org/emoji-regex/-/emoji-regex-8.0.0.tgz",
+            "integrity": "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==",
+            "dev": true,
+            "license": "MIT"
+        },
+        "node_modules/enhanced-resolve": {
+            "version": "5.20.1",
+            "resolved": "https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.20.1.tgz",
+            "integrity": "sha512-Qohcme7V1inbAfvjItgw0EaxVX5q2rdVEZHRBrEQdRZTssLDGsL8Lwrznl8oQ/6kuTJONLaDcGjkNP247XEhcA==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "graceful-fs": "^4.2.4",
+                "tapable": "^2.3.0"
+            },
+            "engines": {
+                "node": ">=10.13.0"
+            }
+        },
+        "node_modules/escalade": {
+            "version": "3.2.0",
+            "resolved": "https://registry.npmjs.org/escalade/-/escalade-3.2.0.tgz",
+            "integrity": "sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=6"
+            }
+        },
+        "node_modules/fdir": {
+            "version": "6.5.0",
+            "resolved": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
+            "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=12.0.0"
+            },
+            "peerDependencies": {
+                "picomatch": "^3 || ^4"
+            },
+            "peerDependenciesMeta": {
+                "picomatch": {
+                    "optional": true
+                }
+            }
+        },
+        "node_modules/fraction.js": {
+            "version": "5.3.4",
+            "resolved": "https://registry.npmjs.org/fraction.js/-/fraction.js-5.3.4.tgz",
+            "integrity": "sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": "*"
+            },
+            "funding": {
+                "type": "github",
+                "url": "https://github.com/sponsors/rawify"
+            }
+        },
+        "node_modules/fsevents": {
+            "version": "2.3.3",
+            "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz",
+            "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
+            "dev": true,
+            "hasInstallScript": true,
+            "license": "MIT",
+            "optional": true,
+            "os": [
+                "darwin"
+            ],
+            "engines": {
+                "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
+            }
+        },
+        "node_modules/get-caller-file": {
+            "version": "2.0.5",
+            "resolved": "https://registry.npmjs.org/get-caller-file/-/get-caller-file-2.0.5.tgz",
+            "integrity": "sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==",
+            "dev": true,
+            "license": "ISC",
+            "engines": {
+                "node": "6.* || 8.* || >= 10.*"
+            }
+        },
+        "node_modules/graceful-fs": {
+            "version": "4.2.11",
+            "resolved": "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz",
+            "integrity": "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==",
+            "dev": true,
+            "license": "ISC"
+        },
+        "node_modules/has-flag": {
+            "version": "4.0.0",
+            "resolved": "https://registry.npmjs.org/has-flag/-/has-flag-4.0.0.tgz",
+            "integrity": "sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=8"
+            }
+        },
+        "node_modules/is-fullwidth-code-point": {
+            "version": "3.0.0",
+            "resolved": "https://registry.npmjs.org/is-fullwidth-code-point/-/is-fullwidth-code-point-3.0.0.tgz",
+            "integrity": "sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=8"
+            }
+        },
+        "node_modules/jiti": {
+            "version": "2.6.1",
+            "resolved": "https://registry.npmjs.org/jiti/-/jiti-2.6.1.tgz",
+            "integrity": "sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==",
+            "dev": true,
+            "license": "MIT",
+            "bin": {
+                "jiti": "lib/jiti-cli.mjs"
+            }
+        },
+        "node_modules/laravel-vite-plugin": {
+            "version": "3.0.1",
+            "resolved": "https://registry.npmjs.org/laravel-vite-plugin/-/laravel-vite-plugin-3.0.1.tgz",
+            "integrity": "sha512-Bx8sVcLIaZT1d0eisABcmjQ1GZdJpaXcV66A8RhXGp9JgR3iL8jDnvakVDXuH87Tn5S9KNx3VOhmJZW1CSexOg==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "picocolors": "^1.0.0",
+                "tinyglobby": "^0.2.12",
+                "vite-plugin-full-reload": "^1.1.0"
+            },
+            "bin": {
+                "clean-orphaned-assets": "bin/clean.js"
+            },
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            },
+            "peerDependencies": {
+                "vite": "^8.0.0"
+            }
+        },
+        "node_modules/lightningcss": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss/-/lightningcss-1.32.0.tgz",
+            "integrity": "sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ==",
+            "dev": true,
+            "license": "MPL-2.0",
+            "dependencies": {
+                "detect-libc": "^2.0.3"
+            },
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            },
+            "optionalDependencies": {
+                "lightningcss-android-arm64": "1.32.0",
+                "lightningcss-darwin-arm64": "1.32.0",
+                "lightningcss-darwin-x64": "1.32.0",
+                "lightningcss-freebsd-x64": "1.32.0",
+                "lightningcss-linux-arm-gnueabihf": "1.32.0",
+                "lightningcss-linux-arm64-gnu": "1.32.0",
+                "lightningcss-linux-arm64-musl": "1.32.0",
+                "lightningcss-linux-x64-gnu": "1.32.0",
+                "lightningcss-linux-x64-musl": "1.32.0",
+                "lightningcss-win32-arm64-msvc": "1.32.0",
+                "lightningcss-win32-x64-msvc": "1.32.0"
+            }
+        },
+        "node_modules/lightningcss-android-arm64": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-android-arm64/-/lightningcss-android-arm64-1.32.0.tgz",
+            "integrity": "sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "android"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-darwin-arm64": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-darwin-arm64/-/lightningcss-darwin-arm64-1.32.0.tgz",
+            "integrity": "sha512-RzeG9Ju5bag2Bv1/lwlVJvBE3q6TtXskdZLLCyfg5pt+HLz9BqlICO7LZM7VHNTTn/5PRhHFBSjk5lc4cmscPQ==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "darwin"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-darwin-x64": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-darwin-x64/-/lightningcss-darwin-x64-1.32.0.tgz",
+            "integrity": "sha512-U+QsBp2m/s2wqpUYT/6wnlagdZbtZdndSmut/NJqlCcMLTWp5muCrID+K5UJ6jqD2BFshejCYXniPDbNh73V8w==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "darwin"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-freebsd-x64": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-freebsd-x64/-/lightningcss-freebsd-x64-1.32.0.tgz",
+            "integrity": "sha512-JCTigedEksZk3tHTTthnMdVfGf61Fky8Ji2E4YjUTEQX14xiy/lTzXnu1vwiZe3bYe0q+SpsSH/CTeDXK6WHig==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "freebsd"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-linux-arm-gnueabihf": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-linux-arm-gnueabihf/-/lightningcss-linux-arm-gnueabihf-1.32.0.tgz",
+            "integrity": "sha512-x6rnnpRa2GL0zQOkt6rts3YDPzduLpWvwAF6EMhXFVZXD4tPrBkEFqzGowzCsIWsPjqSK+tyNEODUBXeeVHSkw==",
+            "cpu": [
+                "arm"
+            ],
+            "dev": true,
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-linux-arm64-gnu": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-linux-arm64-gnu/-/lightningcss-linux-arm64-gnu-1.32.0.tgz",
+            "integrity": "sha512-0nnMyoyOLRJXfbMOilaSRcLH3Jw5z9HDNGfT/gwCPgaDjnx0i8w7vBzFLFR1f6CMLKF8gVbebmkUN3fa/kQJpQ==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "libc": [
+                "glibc"
+            ],
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-linux-arm64-musl": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-linux-arm64-musl/-/lightningcss-linux-arm64-musl-1.32.0.tgz",
+            "integrity": "sha512-UpQkoenr4UJEzgVIYpI80lDFvRmPVg6oqboNHfoH4CQIfNA+HOrZ7Mo7KZP02dC6LjghPQJeBsvXhJod/wnIBg==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "libc": [
+                "musl"
+            ],
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-linux-x64-gnu": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-linux-x64-gnu/-/lightningcss-linux-x64-gnu-1.32.0.tgz",
+            "integrity": "sha512-V7Qr52IhZmdKPVr+Vtw8o+WLsQJYCTd8loIfpDaMRWGUZfBOYEJeyJIkqGIDMZPwPx24pUMfwSxxI8phr/MbOA==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "libc": [
+                "glibc"
+            ],
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-linux-x64-musl": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-linux-x64-musl/-/lightningcss-linux-x64-musl-1.32.0.tgz",
+            "integrity": "sha512-bYcLp+Vb0awsiXg/80uCRezCYHNg1/l3mt0gzHnWV9XP1W5sKa5/TCdGWaR/zBM2PeF/HbsQv/j2URNOiVuxWg==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "libc": [
+                "musl"
+            ],
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "linux"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-win32-arm64-msvc": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-win32-arm64-msvc/-/lightningcss-win32-arm64-msvc-1.32.0.tgz",
+            "integrity": "sha512-8SbC8BR40pS6baCM8sbtYDSwEVQd4JlFTOlaD3gWGHfThTcABnNDBda6eTZeqbofalIJhFx0qKzgHJmcPTnGdw==",
+            "cpu": [
+                "arm64"
+            ],
+            "dev": true,
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "win32"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/lightningcss-win32-x64-msvc": {
+            "version": "1.32.0",
+            "resolved": "https://registry.npmjs.org/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.32.0.tgz",
+            "integrity": "sha512-Amq9B/SoZYdDi1kFrojnoqPLxYhQ4Wo5XiL8EVJrVsB8ARoC1PWW6VGtT0WKCemjy8aC+louJnjS7U18x3b06Q==",
+            "cpu": [
+                "x64"
+            ],
+            "dev": true,
+            "license": "MPL-2.0",
+            "optional": true,
+            "os": [
+                "win32"
+            ],
+            "engines": {
+                "node": ">= 12.0.0"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/parcel"
+            }
+        },
+        "node_modules/magic-string": {
+            "version": "0.30.21",
+            "resolved": "https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz",
+            "integrity": "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "@jridgewell/sourcemap-codec": "^1.5.5"
+            }
+        },
+        "node_modules/nanoid": {
+            "version": "3.3.11",
+            "resolved": "https://registry.npmjs.org/nanoid/-/nanoid-3.3.11.tgz",
+            "integrity": "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==",
+            "dev": true,
+            "funding": [
+                {
+                    "type": "github",
+                    "url": "https://github.com/sponsors/ai"
+                }
+            ],
+            "license": "MIT",
+            "bin": {
+                "nanoid": "bin/nanoid.cjs"
+            },
+            "engines": {
+                "node": "^10 || ^12 || ^13.7 || ^14 || >=15.0.1"
+            }
+        },
+        "node_modules/node-releases": {
+            "version": "2.0.37",
+            "resolved": "https://registry.npmjs.org/node-releases/-/node-releases-2.0.37.tgz",
+            "integrity": "sha512-1h5gKZCF+pO/o3Iqt5Jp7wc9rH3eJJ0+nh/CIoiRwjRxde/hAHyLPXYN4V3CqKAbiZPSeJFSWHmJsbkicta0Eg==",
+            "dev": true,
+            "license": "MIT"
+        },
+        "node_modules/picocolors": {
+            "version": "1.1.1",
+            "resolved": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
+            "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==",
+            "dev": true,
+            "license": "ISC"
+        },
+        "node_modules/picomatch": {
+            "version": "4.0.4",
+            "resolved": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.4.tgz",
+            "integrity": "sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=12"
+            },
+            "funding": {
+                "url": "https://github.com/sponsors/jonschlinkert"
+            }
+        },
+        "node_modules/postcss": {
+            "version": "8.5.10",
+            "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.10.tgz",
+            "integrity": "sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==",
+            "dev": true,
+            "funding": [
+                {
+                    "type": "opencollective",
+                    "url": "https://opencollective.com/postcss/"
+                },
+                {
+                    "type": "tidelift",
+                    "url": "https://tidelift.com/funding/github/npm/postcss"
+                },
+                {
+                    "type": "github",
+                    "url": "https://github.com/sponsors/ai"
+                }
+            ],
+            "license": "MIT",
+            "dependencies": {
+                "nanoid": "^3.3.11",
+                "picocolors": "^1.1.1",
+                "source-map-js": "^1.2.1"
+            },
+            "engines": {
+                "node": "^10 || ^12 || >=14"
+            }
+        },
+        "node_modules/postcss-value-parser": {
+            "version": "4.2.0",
+            "resolved": "https://registry.npmjs.org/postcss-value-parser/-/postcss-value-parser-4.2.0.tgz",
+            "integrity": "sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==",
+            "dev": true,
+            "license": "MIT"
+        },
+        "node_modules/require-directory": {
+            "version": "2.1.1",
+            "resolved": "https://registry.npmjs.org/require-directory/-/require-directory-2.1.1.tgz",
+            "integrity": "sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=0.10.0"
+            }
+        },
+        "node_modules/rolldown": {
+            "version": "1.0.0-rc.15",
+            "resolved": "https://registry.npmjs.org/rolldown/-/rolldown-1.0.0-rc.15.tgz",
+            "integrity": "sha512-Ff31guA5zT6WjnGp0SXw76X6hzGRk/OQq2hE+1lcDe+lJdHSgnSX6nK3erbONHyCbpSj9a9E+uX/OvytZoWp2g==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "@oxc-project/types": "=0.124.0",
+                "@rolldown/pluginutils": "1.0.0-rc.15"
+            },
+            "bin": {
+                "rolldown": "bin/cli.mjs"
+            },
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            },
+            "optionalDependencies": {
+                "@rolldown/binding-android-arm64": "1.0.0-rc.15",
+                "@rolldown/binding-darwin-arm64": "1.0.0-rc.15",
+                "@rolldown/binding-darwin-x64": "1.0.0-rc.15",
+                "@rolldown/binding-freebsd-x64": "1.0.0-rc.15",
+                "@rolldown/binding-linux-arm-gnueabihf": "1.0.0-rc.15",
+                "@rolldown/binding-linux-arm64-gnu": "1.0.0-rc.15",
+                "@rolldown/binding-linux-arm64-musl": "1.0.0-rc.15",
+                "@rolldown/binding-linux-ppc64-gnu": "1.0.0-rc.15",
+                "@rolldown/binding-linux-s390x-gnu": "1.0.0-rc.15",
+                "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.15",
+                "@rolldown/binding-linux-x64-musl": "1.0.0-rc.15",
+                "@rolldown/binding-openharmony-arm64": "1.0.0-rc.15",
+                "@rolldown/binding-wasm32-wasi": "1.0.0-rc.15",
+                "@rolldown/binding-win32-arm64-msvc": "1.0.0-rc.15",
+                "@rolldown/binding-win32-x64-msvc": "1.0.0-rc.15"
+            }
+        },
+        "node_modules/rxjs": {
+            "version": "7.8.2",
+            "resolved": "https://registry.npmjs.org/rxjs/-/rxjs-7.8.2.tgz",
+            "integrity": "sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==",
+            "dev": true,
+            "license": "Apache-2.0",
+            "dependencies": {
+                "tslib": "^2.1.0"
+            }
+        },
+        "node_modules/shell-quote": {
+            "version": "1.8.3",
+            "resolved": "https://registry.npmjs.org/shell-quote/-/shell-quote-1.8.3.tgz",
+            "integrity": "sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">= 0.4"
+            },
+            "funding": {
+                "url": "https://github.com/sponsors/ljharb"
+            }
+        },
+        "node_modules/source-map-js": {
+            "version": "1.2.1",
+            "resolved": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz",
+            "integrity": "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==",
+            "dev": true,
+            "license": "BSD-3-Clause",
+            "engines": {
+                "node": ">=0.10.0"
+            }
+        },
+        "node_modules/string-width": {
+            "version": "4.2.3",
+            "resolved": "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz",
+            "integrity": "sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "emoji-regex": "^8.0.0",
+                "is-fullwidth-code-point": "^3.0.0",
+                "strip-ansi": "^6.0.1"
+            },
+            "engines": {
+                "node": ">=8"
+            }
+        },
+        "node_modules/strip-ansi": {
+            "version": "6.0.1",
+            "resolved": "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.1.tgz",
+            "integrity": "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "ansi-regex": "^5.0.1"
+            },
+            "engines": {
+                "node": ">=8"
+            }
+        },
+        "node_modules/supports-color": {
+            "version": "8.1.1",
+            "resolved": "https://registry.npmjs.org/supports-color/-/supports-color-8.1.1.tgz",
+            "integrity": "sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "has-flag": "^4.0.0"
+            },
+            "engines": {
+                "node": ">=10"
+            },
+            "funding": {
+                "url": "https://github.com/chalk/supports-color?sponsor=1"
+            }
+        },
+        "node_modules/tailwindcss": {
+            "version": "4.2.2",
+            "resolved": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.2.2.tgz",
+            "integrity": "sha512-KWBIxs1Xb6NoLdMVqhbhgwZf2PGBpPEiwOqgI4pFIYbNTfBXiKYyWoTsXgBQ9WFg/OlhnvHaY+AEpW7wSmFo2Q==",
+            "dev": true,
+            "license": "MIT"
+        },
+        "node_modules/tapable": {
+            "version": "2.3.2",
+            "resolved": "https://registry.npmjs.org/tapable/-/tapable-2.3.2.tgz",
+            "integrity": "sha512-1MOpMXuhGzGL5TTCZFItxCc0AARf1EZFQkGqMm7ERKj8+Hgr5oLvJOVFcC+lRmR8hCe2S3jC4T5D7Vg/d7/fhA==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=6"
+            },
+            "funding": {
+                "type": "opencollective",
+                "url": "https://opencollective.com/webpack"
+            }
+        },
+        "node_modules/tinyglobby": {
+            "version": "0.2.16",
+            "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.16.tgz",
+            "integrity": "sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "fdir": "^6.5.0",
+                "picomatch": "^4.0.4"
+            },
+            "engines": {
+                "node": ">=12.0.0"
+            },
+            "funding": {
+                "url": "https://github.com/sponsors/SuperchupuDev"
+            }
+        },
+        "node_modules/tree-kill": {
+            "version": "1.2.2",
+            "resolved": "https://registry.npmjs.org/tree-kill/-/tree-kill-1.2.2.tgz",
+            "integrity": "sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==",
+            "dev": true,
+            "license": "MIT",
+            "bin": {
+                "tree-kill": "cli.js"
+            }
+        },
+        "node_modules/tslib": {
+            "version": "2.8.1",
+            "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
+            "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==",
+            "dev": true,
+            "license": "0BSD"
+        },
+        "node_modules/update-browserslist-db": {
+            "version": "1.2.3",
+            "resolved": "https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz",
+            "integrity": "sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==",
+            "dev": true,
+            "funding": [
+                {
+                    "type": "opencollective",
+                    "url": "https://opencollective.com/browserslist"
+                },
+                {
+                    "type": "tidelift",
+                    "url": "https://tidelift.com/funding/github/npm/browserslist"
+                },
+                {
+                    "type": "github",
+                    "url": "https://github.com/sponsors/ai"
+                }
+            ],
+            "license": "MIT",
+            "dependencies": {
+                "escalade": "^3.2.0",
+                "picocolors": "^1.1.1"
+            },
+            "bin": {
+                "update-browserslist-db": "cli.js"
+            },
+            "peerDependencies": {
+                "browserslist": ">= 4.21.0"
+            }
+        },
+        "node_modules/vite": {
+            "version": "8.0.8",
+            "resolved": "https://registry.npmjs.org/vite/-/vite-8.0.8.tgz",
+            "integrity": "sha512-dbU7/iLVa8KZALJyLOBOQ88nOXtNG8vxKuOT4I2mD+Ya70KPceF4IAmDsmU0h1Qsn5bPrvsY9HJstCRh3hG6Uw==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "lightningcss": "^1.32.0",
+                "picomatch": "^4.0.4",
+                "postcss": "^8.5.8",
+                "rolldown": "1.0.0-rc.15",
+                "tinyglobby": "^0.2.15"
+            },
+            "bin": {
+                "vite": "bin/vite.js"
+            },
+            "engines": {
+                "node": "^20.19.0 || >=22.12.0"
+            },
+            "funding": {
+                "url": "https://github.com/vitejs/vite?sponsor=1"
+            },
+            "optionalDependencies": {
+                "fsevents": "~2.3.3"
+            },
+            "peerDependencies": {
+                "@types/node": "^20.19.0 || >=22.12.0",
+                "@vitejs/devtools": "^0.1.0",
+                "esbuild": "^0.27.0 || ^0.28.0",
+                "jiti": ">=1.21.0",
+                "less": "^4.0.0",
+                "sass": "^1.70.0",
+                "sass-embedded": "^1.70.0",
+                "stylus": ">=0.54.8",
+                "sugarss": "^5.0.0",
+                "terser": "^5.16.0",
+                "tsx": "^4.8.1",
+                "yaml": "^2.4.2"
+            },
+            "peerDependenciesMeta": {
+                "@types/node": {
+                    "optional": true
+                },
+                "@vitejs/devtools": {
+                    "optional": true
+                },
+                "esbuild": {
+                    "optional": true
+                },
+                "jiti": {
+                    "optional": true
+                },
+                "less": {
+                    "optional": true
+                },
+                "sass": {
+                    "optional": true
+                },
+                "sass-embedded": {
+                    "optional": true
+                },
+                "stylus": {
+                    "optional": true
+                },
+                "sugarss": {
+                    "optional": true
+                },
+                "terser": {
+                    "optional": true
+                },
+                "tsx": {
+                    "optional": true
+                },
+                "yaml": {
+                    "optional": true
+                }
+            }
+        },
+        "node_modules/vite-plugin-full-reload": {
+            "version": "1.2.0",
+            "resolved": "https://registry.npmjs.org/vite-plugin-full-reload/-/vite-plugin-full-reload-1.2.0.tgz",
+            "integrity": "sha512-kz18NW79x0IHbxRSHm0jttP4zoO9P9gXh+n6UTwlNKnviTTEpOlum6oS9SmecrTtSr+muHEn5TUuC75UovQzcA==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "picocolors": "^1.0.0",
+                "picomatch": "^2.3.1"
+            }
+        },
+        "node_modules/vite-plugin-full-reload/node_modules/picomatch": {
+            "version": "2.3.2",
+            "resolved": "https://registry.npmjs.org/picomatch/-/picomatch-2.3.2.tgz",
+            "integrity": "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA==",
+            "dev": true,
+            "license": "MIT",
+            "engines": {
+                "node": ">=8.6"
+            },
+            "funding": {
+                "url": "https://github.com/sponsors/jonschlinkert"
+            }
+        },
+        "node_modules/wrap-ansi": {
+            "version": "7.0.0",
+            "resolved": "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-7.0.0.tgz",
+            "integrity": "sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "ansi-styles": "^4.0.0",
+                "string-width": "^4.1.0",
+                "strip-ansi": "^6.0.0"
+            },
+            "engines": {
+                "node": ">=10"
+            },
+            "funding": {
+                "url": "https://github.com/chalk/wrap-ansi?sponsor=1"
+            }
+        },
+        "node_modules/y18n": {
+            "version": "5.0.8",
+            "resolved": "https://registry.npmjs.org/y18n/-/y18n-5.0.8.tgz",
+            "integrity": "sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==",
+            "dev": true,
+            "license": "ISC",
+            "engines": {
+                "node": ">=10"
+            }
+        },
+        "node_modules/yargs": {
+            "version": "17.7.2",
+            "resolved": "https://registry.npmjs.org/yargs/-/yargs-17.7.2.tgz",
+            "integrity": "sha512-7dSzzRQ++CKnNI/krKnYRV7JKKPUXMEh61soaHKg9mrWEhzFWhFnxPxGl+69cD1Ou63C13NUPCnmIcrvqCuM6w==",
+            "dev": true,
+            "license": "MIT",
+            "dependencies": {
+                "cliui": "^8.0.1",
+                "escalade": "^3.1.1",
+                "get-caller-file": "^2.0.5",
+                "require-directory": "^2.1.1",
+                "string-width": "^4.2.3",
+                "y18n": "^5.0.5",
+                "yargs-parser": "^21.1.1"
+            },
+            "engines": {
+                "node": ">=12"
+            }
+        },
+        "node_modules/yargs-parser": {
+            "version": "21.1.1",
+            "resolved": "https://registry.npmjs.org/yargs-parser/-/yargs-parser-21.1.1.tgz",
+            "integrity": "sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==",
+            "dev": true,
+            "license": "ISC",
+            "engines": {
+                "node": ">=12"
+            }
+        }
+    }
+}
+
+```
+
+## FILE: package.json
+```json
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.2.2",
+        "autoprefixer": "^10.5.0",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^3.0.0",
+        "postcss": "^8.5.10",
+        "tailwindcss": "^4.2.2",
+        "vite": "^8.0.0"
+    }
+}
+
+```
+
+## FILE: README.md
+```md
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
+
+## About Laravel
+
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
+
+## Learning Laravel
+
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+
+In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+
+You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+
+## Agentic Development
+
+Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+
+```bash
+composer require laravel/boost --dev
+
+php artisan boost:install
+```
+
+Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+
+## Contributing
+
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+
+## Code of Conduct
+
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+
+## Security Vulnerabilities
+
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+```
+
+## FILE: vite.config.js
+```js
+import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+import tailwindcss from '@tailwindcss/vite';
+
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: ['resources/css/app.css', 'resources/js/app.js'],
+            refresh: true,
+        }),
+        tailwindcss(),
+    ],
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: 'localhost',
+        },
+        watch: {
+            usePolling: true,
+        },
+    },
+});
+
+```
+
+## FILE: app/Http/Controllers/Controller.php
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+
+```
+
+## FILE: app/Models/User.php
+```php
+<?php
+
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+#[Fillable(['name', 'email', 'password'])]
+#[Hidden(['password', 'remember_token'])]
+class User extends Authenticatable
+{
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, Notifiable;
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+}
+
+```
+
+## FILE: app/Providers/AppServiceProvider.php
+```php
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        //
+    }
+}
+
+```
+
+## FILE: config/app.php
+```php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Name
+    |--------------------------------------------------------------------------
+    |
+    | This value is the name of your application, which will be used when the
+    | framework needs to place the application's name in a notification or
+    | other UI elements where an application name needs to be displayed.
+    |
+    */
+
+    'name' => env('APP_NAME', 'Laravel'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Environment
+    |--------------------------------------------------------------------------
+    |
+    | This value determines the "environment" your application is currently
+    | running in. This may determine how you prefer to configure various
+    | services the application utilizes. Set this in your ".env" file.
+    |
+    */
+
+    'env' => env('APP_ENV', 'production'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Debug Mode
+    |--------------------------------------------------------------------------
+    |
+    | When your application is in debug mode, detailed error messages with
+    | stack traces will be shown on every error that occurs within your
+    | application. If disabled, a simple generic error page is shown.
+    |
+    */
+
+    'debug' => (bool) env('APP_DEBUG', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used by the console to properly generate URLs when using
+    | the Artisan command line tool. You should set this to the root of
+    | the application so that it's available within Artisan commands.
+    |
+    */
+
+    'url' => env('APP_URL', 'http://localhost'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify the default timezone for your application, which
+    | will be used by the PHP date and date-time functions. The timezone
+    | is set to "UTC" by default as it is suitable for most use cases.
+    |
+    */
+
+    'timezone' => 'UTC',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Locale Configuration
+    |--------------------------------------------------------------------------
+    |
+    | The application locale determines the default locale that will be used
+    | by Laravel's translation / localization methods. This option can be
+    | set to any locale for which you plan to have translation strings.
+    |
+    */
+
+    'locale' => env('APP_LOCALE', 'en'),
+
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+
+    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Encryption Key
+    |--------------------------------------------------------------------------
+    |
+    | This key is utilized by Laravel's encryption services and should be set
+    | to a random, 32 character string to ensure that all encrypted values
+    | are secure. You should do this prior to deploying the application.
+    |
+    */
+
+    'cipher' => 'AES-256-CBC',
+
+    'key' => env('APP_KEY'),
+
+    'previous_keys' => [
+        ...array_filter(
+            explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
+        ),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Maintenance Mode Driver
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options determine the driver used to determine and
+    | manage Laravel's "maintenance mode" status. The "cache" driver will
+    | allow maintenance mode to be controlled across multiple machines.
+    |
+    | Supported drivers: "file", "cache"
+    |
+    */
+
+    'maintenance' => [
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
+        'store' => env('APP_MAINTENANCE_STORE', 'database'),
+    ],
+
+];
+
+```
+
+## FILE: config/auth.php
+```php
+<?php
+
+use App\Models\User;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Defaults
+    |--------------------------------------------------------------------------
+    |
+    | This option defines the default authentication "guard" and password
+    | reset "broker" for your application. You may change these values
+    | as required, but they're a perfect start for most applications.
+    |
+    */
+
+    'defaults' => [
+        'guard' => env('AUTH_GUARD', 'web'),
+        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Guards
+    |--------------------------------------------------------------------------
+    |
+    | Next, you may define every authentication guard for your application.
+    | Of course, a great default configuration has been defined for you
+    | which utilizes session storage plus the Eloquent user provider.
+    |
+    | All authentication guards have a user provider, which defines how the
+    | users are actually retrieved out of your database or other storage
+    | system used by the application. Typically, Eloquent is utilized.
+    |
+    | Supported: "session"
+    |
+    */
+
+    'guards' => [
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Providers
+    |--------------------------------------------------------------------------
+    |
+    | All authentication guards have a user provider, which defines how the
+    | users are actually retrieved out of your database or other storage
+    | system used by the application. Typically, Eloquent is utilized.
+    |
+    | If you have multiple user tables or models you may configure multiple
+    | providers to represent the model / table. These providers may then
+    | be assigned to any extra authentication guards you have defined.
+    |
+    | Supported: "database", "eloquent"
+    |
+    */
+
+    'providers' => [
+        'users' => [
+            'driver' => 'eloquent',
+            'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        // 'users' => [
+        //     'driver' => 'database',
+        //     'table' => 'users',
+        // ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resetting Passwords
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options specify the behavior of Laravel's password
+    | reset functionality, including the table utilized for token storage
+    | and the user provider that is invoked to actually retrieve users.
+    |
+    | The expiry time is the number of minutes that each reset token will be
+    | considered valid. This security feature keeps tokens short-lived so
+    | they have less time to be guessed. You may change this as needed.
+    |
+    | The throttle setting is the number of seconds a user must wait before
+    | generating more password reset tokens. This prevents the user from
+    | quickly generating a very large amount of password reset tokens.
+    |
+    */
+
+    'passwords' => [
+        'users' => [
+            'provider' => 'users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Confirmation Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Here you may define the number of seconds before a password confirmation
+    | window expires and users are asked to re-enter their password via the
+    | confirmation screen. By default, the timeout lasts for three hours.
+    |
+    */
+
+    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+];
+
+```
+
+## FILE: config/cache.php
+```php
+<?php
+
+use Illuminate\Support\Str;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Cache Store
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the default cache store that will be used by the
+    | framework. This connection is utilized if another isn't explicitly
+    | specified when running a cache operation inside the application.
+    |
+    */
+
+    'default' => env('CACHE_STORE', 'database'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Stores
+    |--------------------------------------------------------------------------
+    |
+    | Here you may define all of the cache "stores" for your application as
+    | well as their drivers. You may even define multiple stores for the
+    | same cache driver to group types of items stored in your caches.
+    |
+    | Supported drivers: "array", "database", "file", "memcached",
+    |                    "redis", "dynamodb", "octane",
+    |                    "failover", "null"
+    |
+    */
+
+    'stores' => [
+
+        'array' => [
+            'driver' => 'array',
+            'serialize' => false,
+        ],
+
+        'database' => [
+            'driver' => 'database',
+            'connection' => env('DB_CACHE_CONNECTION'),
+            'table' => env('DB_CACHE_TABLE', 'cache'),
+            'lock_connection' => env('DB_CACHE_LOCK_CONNECTION'),
+            'lock_table' => env('DB_CACHE_LOCK_TABLE'),
+        ],
+
+        'file' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/data'),
+            'lock_path' => storage_path('framework/cache/data'),
+        ],
+
+        'memcached' => [
+            'driver' => 'memcached',
+            'persistent_id' => env('MEMCACHED_PERSISTENT_ID'),
+            'sasl' => [
+                env('MEMCACHED_USERNAME'),
+                env('MEMCACHED_PASSWORD'),
+            ],
+            'options' => [
+                // Memcached::OPT_CONNECT_TIMEOUT => 2000,
+            ],
+            'servers' => [
+                [
+                    'host' => env('MEMCACHED_HOST', '127.0.0.1'),
+                    'port' => env('MEMCACHED_PORT', 11211),
+                    'weight' => 100,
+                ],
+            ],
+        ],
+
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
+            'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
+        ],
+
+        'dynamodb' => [
+            'driver' => 'dynamodb',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'table' => env('DYNAMODB_CACHE_TABLE', 'cache'),
+            'endpoint' => env('DYNAMODB_ENDPOINT'),
+        ],
+
+        'octane' => [
+            'driver' => 'octane',
+        ],
+
+        'failover' => [
+            'driver' => 'failover',
+            'stores' => [
+                'database',
+                'array',
+            ],
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Key Prefix
+    |--------------------------------------------------------------------------
+    |
+    | When utilizing the APC, database, memcached, Redis, and DynamoDB cache
+    | stores, there might be other applications using the same cache. For
+    | that reason, you may prefix every cache key to avoid collisions.
+    |
+    */
+
+    'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Serializable Classes
+    |--------------------------------------------------------------------------
+    |
+    | This value determines the classes that can be unserialized from cache
+    | storage. By default, no PHP classes will be unserialized from your
+    | cache to prevent gadget chain attacks if your APP_KEY is leaked.
+    |
+    */
+
+    'serializable_classes' => false,
+
+];
+
+```
+
+## FILE: config/database.php
+```php
+<?php
+
+use Illuminate\Support\Str;
+use Pdo\Mysql;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Database Connection Name
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify which of the database connections below you wish
+    | to use as your default connection for database operations. This is
+    | the connection which will be utilized unless another connection
+    | is explicitly specified when you execute a query / statement.
+    |
+    */
+
+    'default' => env('DB_CONNECTION', 'sqlite'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Database Connections
+    |--------------------------------------------------------------------------
+    |
+    | Below are all of the database connections defined for your application.
+    | An example configuration is provided for each database system which
+    | is supported by Laravel. You're free to add / remove connections.
+    |
+    */
+
+    'connections' => [
+
+        'sqlite' => [
+            'driver' => 'sqlite',
+            'url' => env('DB_URL'),
+            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+        ],
+
+        'mysql' => [
+            'driver' => 'mysql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'mariadb' => [
+            'driver' => 'mariadb',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'pgsql' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
+        'sqlsrv' => [
+            'driver' => 'sqlsrv',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', 'localhost'),
+            'port' => env('DB_PORT', '1433'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
+            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Migration Repository Table
+    |--------------------------------------------------------------------------
+    |
+    | This table keeps track of all the migrations that have already run for
+    | your application. Using this information, we can determine which of
+    | the migrations on disk haven't actually been run on the database.
+    |
+    */
+
+    'migrations' => [
+        'table' => 'migrations',
+        'update_date_on_publish' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Redis Databases
+    |--------------------------------------------------------------------------
+    |
+    | Redis is an open source, fast, and advanced key-value store that also
+    | provides a richer body of commands than a typical key-value system
+    | such as Memcached. You may define your connection settings here.
+    |
+    */
+
+    'redis' => [
+
+        'client' => env('REDIS_CLIENT', 'phpredis'),
+
+        'options' => [
+            'cluster' => env('REDIS_CLUSTER', 'redis'),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
+            'persistent' => env('REDIS_PERSISTENT', false),
+        ],
+
+        'default' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_DB', '0'),
+            'max_retries' => env('REDIS_MAX_RETRIES', 3),
+            'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
+            'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
+            'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
+        ],
+
+        'cache' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_CACHE_DB', '1'),
+            'max_retries' => env('REDIS_MAX_RETRIES', 3),
+            'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
+            'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
+            'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
+        ],
+
+    ],
+
+];
+
+```
+
+## FILE: config/filesystems.php
+```php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Filesystem Disk
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify the default filesystem disk that should be used
+    | by the framework. The "local" disk, as well as a variety of cloud
+    | based disks are available to your application for file storage.
+    |
+    */
+
+    'default' => env('FILESYSTEM_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filesystem Disks
+    |--------------------------------------------------------------------------
+    |
+    | Below you may configure as many filesystem disks as necessary, and you
+    | may even configure multiple disks for the same driver. Examples for
+    | most supported storage drivers are configured here for reference.
+    |
+    | Supported drivers: "local", "ftp", "sftp", "s3"
+    |
+    */
+
+    'disks' => [
+
+        'local' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'public' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        's3' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Symbolic Links
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the symbolic links that will be created when the
+    | `storage:link` Artisan command is executed. The array keys should be
+    | the locations of the links and the values should be their targets.
+    |
+    */
+
+    'links' => [
+        public_path('storage') => storage_path('app/public'),
+    ],
+
+];
+
+```
+
+## FILE: config/logging.php
+```php
+<?php
+
+use Monolog\Handler\NullHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Handler\SyslogUdpHandler;
+use Monolog\Processor\PsrLogMessageProcessor;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Log Channel
+    |--------------------------------------------------------------------------
+    |
+    | This option defines the default log channel that is utilized to write
+    | messages to your logs. The value provided here should match one of
+    | the channels present in the list of "channels" configured below.
+    |
+    */
+
+    'default' => env('LOG_CHANNEL', 'stack'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Deprecations Log Channel
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the log channel that should be used to log warnings
+    | regarding deprecated PHP and library features. This allows you to get
+    | your application ready for upcoming major versions of dependencies.
+    |
+    */
+
+    'deprecations' => [
+        'channel' => env('LOG_DEPRECATIONS_CHANNEL', 'null'),
+        'trace' => env('LOG_DEPRECATIONS_TRACE', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Log Channels
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the log channels for your application. Laravel
+    | utilizes the Monolog PHP logging library, which includes a variety
+    | of powerful log handlers and formatters that you're free to use.
+    |
+    | Available drivers: "single", "daily", "slack", "syslog",
+    |                    "errorlog", "monolog", "custom", "stack"
+    |
+    */
+
+    'channels' => [
+
+        'stack' => [
+            'driver' => 'stack',
+            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'ignore_exceptions' => false,
+        ],
+
+        'single' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'daily' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
+        'slack' => [
+            'driver' => 'slack',
+            'url' => env('LOG_SLACK_WEBHOOK_URL'),
+            'username' => env('LOG_SLACK_USERNAME', env('APP_NAME', 'Laravel')),
+            'emoji' => env('LOG_SLACK_EMOJI', ':boom:'),
+            'level' => env('LOG_LEVEL', 'critical'),
+            'replace_placeholders' => true,
+        ],
+
+        'papertrail' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => env('LOG_PAPERTRAIL_HANDLER', SyslogUdpHandler::class),
+            'handler_with' => [
+                'host' => env('PAPERTRAIL_URL'),
+                'port' => env('PAPERTRAIL_PORT'),
+                'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
+            ],
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+
+        'stderr' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => 'php://stderr',
+            ],
+            'formatter' => env('LOG_STDERR_FORMATTER'),
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+
+        'syslog' => [
+            'driver' => 'syslog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'facility' => env('LOG_SYSLOG_FACILITY', LOG_USER),
+            'replace_placeholders' => true,
+        ],
+
+        'errorlog' => [
+            'driver' => 'errorlog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'null' => [
+            'driver' => 'monolog',
+            'handler' => NullHandler::class,
+        ],
+
+        'emergency' => [
+            'path' => storage_path('logs/laravel.log'),
+        ],
+
+    ],
+
+];
+
+```
+
+## FILE: config/mail.php
+```php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Mailer
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the default mailer that is used to send all email
+    | messages unless another mailer is explicitly specified when sending
+    | the message. All additional mailers can be configured within the
+    | "mailers" array. Examples of each type of mailer are provided.
+    |
+    */
+
+    'default' => env('MAIL_MAILER', 'log'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mailer Configurations
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure all of the mailers used by your application plus
+    | their respective settings. Several examples have been configured for
+    | you and you are free to add your own as your application requires.
+    |
+    | Laravel supports a variety of mail "transport" drivers that can be used
+    | when delivering an email. You may specify which one you're using for
+    | your mailers below. You may also add additional mailers if needed.
+    |
+    | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
+    |            "postmark", "resend", "log", "array",
+    |            "failover", "roundrobin"
+    |
+    */
+
+    'mailers' => [
+
+        'smtp' => [
+            'transport' => 'smtp',
+            'scheme' => env('MAIL_SCHEME'),
+            'url' => env('MAIL_URL'),
+            'host' => env('MAIL_HOST', '127.0.0.1'),
+            'port' => env('MAIL_PORT', 2525),
+            'username' => env('MAIL_USERNAME'),
+            'password' => env('MAIL_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
+        'ses' => [
+            'transport' => 'ses',
+        ],
+
+        'postmark' => [
+            'transport' => 'postmark',
+            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
+            // 'client' => [
+            //     'timeout' => 5,
+            // ],
+        ],
+
+        'resend' => [
+            'transport' => 'resend',
+        ],
+
+        'sendmail' => [
+            'transport' => 'sendmail',
+            'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
+        ],
+
+        'log' => [
+            'transport' => 'log',
+            'channel' => env('MAIL_LOG_CHANNEL'),
+        ],
+
+        'array' => [
+            'transport' => 'array',
+        ],
+
+        'failover' => [
+            'transport' => 'failover',
+            'mailers' => [
+                'smtp',
+                'log',
+            ],
+            'retry_after' => 60,
+        ],
+
+        'roundrobin' => [
+            'transport' => 'roundrobin',
+            'mailers' => [
+                'ses',
+                'postmark',
+            ],
+            'retry_after' => 60,
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Global "From" Address
+    |--------------------------------------------------------------------------
+    |
+    | You may wish for all emails sent by your application to be sent from
+    | the same address. Here you may specify a name and address that is
+    | used globally for all emails that are sent by your application.
+    |
+    */
+
+    'from' => [
+        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+    ],
+
+];
+
+```
+
+## FILE: config/queue.php
+```php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Queue Connection Name
+    |--------------------------------------------------------------------------
+    |
+    | Laravel's queue supports a variety of backends via a single, unified
+    | API, giving you convenient access to each backend using identical
+    | syntax for each. The default queue connection is defined below.
+    |
+    */
+
+    'default' => env('QUEUE_CONNECTION', 'database'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Connections
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the connection options for every queue backend
+    | used by your application. An example configuration is provided for
+    | each backend supported by Laravel. You're also free to add more.
+    |
+    | Drivers: "sync", "database", "beanstalkd", "sqs", "redis",
+    |          "deferred", "background", "failover", "null"
+    |
+    */
+
+    'connections' => [
+
+        'sync' => [
+            'driver' => 'sync',
+        ],
+
+        'database' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => env('DB_QUEUE', 'default'),
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            'after_commit' => false,
+        ],
+
+        'beanstalkd' => [
+            'driver' => 'beanstalkd',
+            'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),
+            'queue' => env('BEANSTALKD_QUEUE', 'default'),
+            'retry_after' => (int) env('BEANSTALKD_QUEUE_RETRY_AFTER', 90),
+            'block_for' => 0,
+            'after_commit' => false,
+        ],
+
+        'sqs' => [
+            'driver' => 'sqs',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'prefix' => env('SQS_PREFIX', 'https://sqs.us-east-1.amazonaws.com/your-account-id'),
+            'queue' => env('SQS_QUEUE', 'default'),
+            'suffix' => env('SQS_SUFFIX'),
+            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'after_commit' => false,
+        ],
+
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => env('REDIS_QUEUE', 'default'),
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+
+        'deferred' => [
+            'driver' => 'deferred',
+        ],
+
+        'background' => [
+            'driver' => 'background',
+        ],
+
+        'failover' => [
+            'driver' => 'failover',
+            'connections' => [
+                'database',
+                'deferred',
+            ],
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Batching
+    |--------------------------------------------------------------------------
+    |
+    | The following options configure the database and table that store job
+    | batching information. These options can be updated to any database
+    | connection and table which has been defined by your application.
+    |
+    */
+
+    'batching' => [
+        'database' => env('DB_CONNECTION', 'sqlite'),
+        'table' => 'job_batches',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Failed Queue Jobs
+    |--------------------------------------------------------------------------
+    |
+    | These options configure the behavior of failed queue job logging so you
+    | can control how and where failed jobs are stored. Laravel ships with
+    | support for storing failed jobs in a simple file or in a database.
+    |
+    | Supported drivers: "database-uuids", "dynamodb", "file", "null"
+    |
+    */
+
+    'failed' => [
+        'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
+        'database' => env('DB_CONNECTION', 'sqlite'),
+        'table' => 'failed_jobs',
+    ],
+
+];
+
+```
+
+## FILE: config/services.php
+```php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Third Party Services
+    |--------------------------------------------------------------------------
+    |
+    | This file is for storing the credentials for third party services such
+    | as Mailgun, Postmark, AWS and more. This file provides the de facto
+    | location for this type of information, allowing packages to have
+    | a conventional file to locate the various service credentials.
+    |
+    */
+
+    'postmark' => [
+        'key' => env('POSTMARK_API_KEY'),
+    ],
+
+    'resend' => [
+        'key' => env('RESEND_API_KEY'),
+    ],
+
+    'ses' => [
+        'key' => env('AWS_ACCESS_KEY_ID'),
+        'secret' => env('AWS_SECRET_ACCESS_KEY'),
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+
+    'slack' => [
+        'notifications' => [
+            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
+            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+        ],
+    ],
+
+];
+
+```
+
+## FILE: config/session.php
+```php
+<?php
+
+use Illuminate\Support\Str;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Session Driver
+    |--------------------------------------------------------------------------
+    |
+    | This option determines the default session driver that is utilized for
+    | incoming requests. Laravel supports a variety of storage options to
+    | persist session data. Database storage is a great default choice.
+    |
+    | Supported: "file", "cookie", "database", "memcached",
+    |            "redis", "dynamodb", "array"
+    |
+    */
+
+    'driver' => env('SESSION_DRIVER', 'database'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify the number of minutes that you wish the session
+    | to be allowed to remain idle before it expires. If you want them
+    | to expire immediately when the browser is closed then you may
+    | indicate that via the expire_on_close configuration option.
+    |
+    */
+
+    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+
+    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Encryption
+    |--------------------------------------------------------------------------
+    |
+    | This option allows you to easily specify that all of your session data
+    | should be encrypted before it's stored. All encryption is performed
+    | automatically by Laravel and you may use the session like normal.
+    |
+    */
+
+    'encrypt' => env('SESSION_ENCRYPT', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session File Location
+    |--------------------------------------------------------------------------
+    |
+    | When utilizing the "file" session driver, the session files are placed
+    | on disk. The default storage location is defined here; however, you
+    | are free to provide another location where they should be stored.
+    |
+    */
+
+    'files' => storage_path('framework/sessions'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Database Connection
+    |--------------------------------------------------------------------------
+    |
+    | When using the "database" or "redis" session drivers, you may specify a
+    | connection that should be used to manage these sessions. This should
+    | correspond to a connection in your database configuration options.
+    |
+    */
+
+    'connection' => env('SESSION_CONNECTION'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Database Table
+    |--------------------------------------------------------------------------
+    |
+    | When using the "database" session driver, you may specify the table to
+    | be used to store sessions. Of course, a sensible default is defined
+    | for you; however, you're welcome to change this to another table.
+    |
+    */
+
+    'table' => env('SESSION_TABLE', 'sessions'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Cache Store
+    |--------------------------------------------------------------------------
+    |
+    | When using one of the framework's cache driven session backends, you may
+    | define the cache store which should be used to store the session data
+    | between requests. This must match one of your defined cache stores.
+    |
+    | Affects: "dynamodb", "memcached", "redis"
+    |
+    */
+
+    'store' => env('SESSION_STORE'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Sweeping Lottery
+    |--------------------------------------------------------------------------
+    |
+    | Some session drivers must manually sweep their storage location to get
+    | rid of old sessions from storage. Here are the chances that it will
+    | happen on a given request. By default, the odds are 2 out of 100.
+    |
+    */
+
+    'lottery' => [2, 100],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Cookie Name
+    |--------------------------------------------------------------------------
+    |
+    | Here you may change the name of the session cookie that is created by
+    | the framework. Typically, you should not need to change this value
+    | since doing so does not grant a meaningful security improvement.
+    |
+    */
+
+    'cookie' => env(
+        'SESSION_COOKIE',
+        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
+    ),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Cookie Path
+    |--------------------------------------------------------------------------
+    |
+    | The session cookie path determines the path for which the cookie will
+    | be regarded as available. Typically, this will be the root path of
+    | your application, but you're free to change this when necessary.
+    |
+    */
+
+    'path' => env('SESSION_PATH', '/'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Cookie Domain
+    |--------------------------------------------------------------------------
+    |
+    | This value determines the domain and subdomains the session cookie is
+    | available to. By default, the cookie will be available to the root
+    | domain without subdomains. Typically, this shouldn't be changed.
+    |
+    */
+
+    'domain' => env('SESSION_DOMAIN'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTPS Only Cookies
+    |--------------------------------------------------------------------------
+    |
+    | By setting this option to true, session cookies will only be sent back
+    | to the server if the browser has a HTTPS connection. This will keep
+    | the cookie from being sent to you when it can't be done securely.
+    |
+    */
+
+    'secure' => env('SESSION_SECURE_COOKIE'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP Access Only
+    |--------------------------------------------------------------------------
+    |
+    | Setting this value to true will prevent JavaScript from accessing the
+    | value of the cookie and the cookie will only be accessible through
+    | the HTTP protocol. It's unlikely you should disable this option.
+    |
+    */
+
+    'http_only' => env('SESSION_HTTP_ONLY', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Same-Site Cookies
+    |--------------------------------------------------------------------------
+    |
+    | This option determines how your cookies behave when cross-site requests
+    | take place, and can be used to mitigate CSRF attacks. By default, we
+    | will set this value to "lax" to permit secure cross-site requests.
+    |
+    | See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+    |
+    | Supported: "lax", "strict", "none", null
+    |
+    */
+
+    'same_site' => env('SESSION_SAME_SITE', 'lax'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Partitioned Cookies
+    |--------------------------------------------------------------------------
+    |
+    | Setting this value to true will tie the cookie to the top-level site for
+    | a cross-site context. Partitioned cookies are accepted by the browser
+    | when flagged "secure" and the Same-Site attribute is set to "none".
+    |
+    */
+
+    'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Serialization
+    |--------------------------------------------------------------------------
+    |
+    | This value controls the serialization strategy for session data, which
+    | is JSON by default. Setting this to "php" allows the storage of PHP
+    | objects in the session but can make an application vulnerable to
+    | "gadget chain" serialization attacks if the APP_KEY is leaked.
+    |
+    | Supported: "json", "php"
+    |
+    */
+
+    'serialization' => 'json',
+
+];
+
+```
+
+## FILE: database/factories/UserFactory.php
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+/**
+ * @extends Factory<User>
+ */
+class UserFactory extends Factory
+{
+    /**
+     * The current password being used by the factory.
+     */
+    protected static ?string $password;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(),
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+        ];
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
+}
+
+```
+
+## FILE: database/migrations/0001_01_01_000000_create_users_table.php
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+    }
+};
+
+```
+
+## FILE: database/migrations/0001_01_01_000001_create_cache_table.php
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->bigInteger('expiration')->index();
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->bigInteger('expiration')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
+    }
+};
+
+```
+
+## FILE: database/migrations/0001_01_01_000002_create_jobs_table.php
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
+        });
+
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('failed_jobs');
+    }
+};
+
+```
+
+## FILE: database/seeders/DatabaseSeeder.php
+```php
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\User;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    use WithoutModelEvents;
+
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        // User::factory(10)->create();
+
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+    }
+}
+
+```
+
+## FILE: public/index.php
+```php
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+// Determine if the application is in maintenance mode...
+if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+// Register the Composer autoloader...
+require __DIR__.'/../vendor/autoload.php';
+
+// Bootstrap Laravel and handle the request...
+/** @var Application $app */
+$app = require_once __DIR__.'/../bootstrap/app.php';
+
+$app->handleRequest(Request::capture());
+
+```
+
+## FILE: resources/css/app.css
+```css
+@import "tailwindcss";
+
+```
+
+## FILE: resources/js/app.js
+```js
+//
+
+```
+
+## FILE: resources/views/welcome.blade.php
+```php
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sange Integrator</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="antialiased bg-gray-100 text-gray-900 flex items-center justify-center min-h-screen">
+<div class="text-center">
+    <h1 class="text-4xl font-bold mb-4">Sange Integrator</h1>
+    <p class="text-lg text-gray-600">Laravel + PostgreSQL + Tailwind CSS + Docker</p>
+</div>
+</body>
+</html>
+
+```
+
+## FILE: routes/console.php
+```php
+<?php
+
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
+
+Artisan::command('inspire', function () {
+    $this->comment(Inspiring::quote());
+})->purpose('Display an inspiring quote');
+
+```
+
+## FILE: routes/web.php
+```php
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+// 1. The System Core (Login/Admin)
+Route::domain('sys.bayam.test')->group(function () {
+    Route::get('/', function () { return 'Welcome to Sys Core (sys.bayam.test)'; });
+    // Route::get('/login', [AuthController::class, 'show']);
+});
+
+// 2. Bayamedic
+Route::domain('bner.bayam.test')->group(function () {
+    Route::get('/', function () { return 'Welcome to Bayamedic (bner.bayam.test)'; });
+});
+
+// 3. Bayam Travel
+Route::domain('bt.bayam.test')->group(function () {
+    Route::get('/', function () { return 'Welcome to Bayam Travel (bt.bayam.test)'; });
+});
+
+// 4. Bayam Enterprise
+Route::domain('enterprise.bayam.test')->group(function () {
+    Route::get('/', function () { return 'Welcome to Bayam Enterprise (enterprise.bayam.test)'; });
+});
+
+// 5. Bayam Tech
+Route::domain('btech.bayam.test')->group(function () {
+    Route::get('/', function () { return 'Welcome to Bayam Tech (btech.bayam.test)'; });
+});
+
+// Fallback / Info Panel
+Route::domain('info.bayam.test')->group(function () {
+    Route::get('/', function () { return 'Welcome to Info Panel (info.bayam.test)'; });
+});
+
+```
+
+## FILE: tests/TestCase.php
+```php
+<?php
+
+namespace Tests;
+
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+
+abstract class TestCase extends BaseTestCase
+{
+    //
+}
+
+```
+
+## FILE: tests/Feature/ExampleTest.php
+```php
+<?php
+
+namespace Tests\Feature;
+
+// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ExampleTest extends TestCase
+{
+    /**
+     * A basic test example.
+     */
+    public function test_the_application_returns_a_successful_response(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertStatus(200);
+    }
+}
+
+```
+
+## FILE: tests/Feature/SubdomainRouteTest.php
+```php
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
+
+class SubdomainRouteTest extends TestCase
+{
+    /**
+     * A basic feature test example.
+     */
+    public function test_example(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertStatus(200);
+    }
+}
+
+```
+
+## FILE: tests/Unit/ExampleTest.php
+```php
+<?php
+
+namespace Tests\Unit;
+
+use PHPUnit\Framework\TestCase;
+
+class ExampleTest extends TestCase
+{
+    /**
+     * A basic test example.
+     */
+    public function test_that_true_is_true(): void
+    {
+        $this->assertTrue(true);
+    }
+}
+
+```
+
