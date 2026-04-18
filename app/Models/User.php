@@ -16,7 +16,9 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
-
+// 🔒 THE MULTI-TENANT ANCHOR
+    // Forces Laravel to always read users from the Control DB
+    protected $connection = 'control';
     /**
      * Get the attributes that should be cast.
      *
