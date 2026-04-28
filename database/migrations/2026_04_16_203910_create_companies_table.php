@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('db_name')->unique();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->string('industry')->default('general'); // e.g., 'travel', 'medical', 'corporate'
             $table->softDeletes(); // Required for ISO 27001 / HIPAA
         });
     }

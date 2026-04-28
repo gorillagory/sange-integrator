@@ -37,7 +37,7 @@ class TenantMigrationManager extends Command
         }
 
         if ($companies->isEmpty()) {
-            $this->warn('No active companies found in the control database. Add records to the `companies` table first.');
+            $this->warn('No active companies found in the control database.');
             return Command::SUCCESS;
         }
 
@@ -52,11 +52,30 @@ class TenantMigrationManager extends Command
             DB::purge('tenant');      // Destroy old connection cache
             DB::reconnect('tenant');  // Connect to the new tenant DB
 
-            // 4. Prepare Artisan command options
+            // 4. 🧠 THE FIX: Dynamically build the migration paths
+            $paths = [];
+
+            // Add shared tenant migrations (if they exist)
+            if (is_dir(base_path('database/migrations/tenant/shared'))) {
+                $paths[] = 'database/migrations/tenant/shared';
+            }
+
+            // Add industry-specific migrations (e.g. 'travel')
+            $industryPath = 'database/migrations/tenant/' . strtolower($company->industry);
+            if (is_dir(base_path($industryPath))) {
+                $paths[] = $industryPath;
+            }
+
+            if (empty($paths)) {
+                $this->warn("⚠️ No migration folders found for industry: {$company->industry}. Skipping.");
+                continue;
+            }
+
+            // 5. Prepare Artisan command options
             $options = [
                 '--database' => 'tenant',
-                '--path' => 'database/migrations/tenant', // STRICTLY use the tenant folder
-                '--force' => true, // Bypass production confirmation prompts
+                '--path' => $paths,
+                '--force' => true,
             ];
 
             if ($this->option('seed')) {
@@ -65,7 +84,7 @@ class TenantMigrationManager extends Command
 
             $command = $this->option('refresh') ? 'migrate:refresh' : 'migrate';
 
-            // 5. Execute the migration securely
+            // 6. Execute the migration securely
             try {
                 Artisan::call($command, $options, $this->output);
                 $this->info("✅ Successfully migrated: {$company->name}");

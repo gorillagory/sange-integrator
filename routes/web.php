@@ -1,102 +1,85 @@
 <?php
-use Inertia\Inertia;
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Middleware\IdentifyTenant;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ContractController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Middleware\IdentifyTenant;
+use App\Http\Controllers\System\CompanyController;
+use App\Http\Controllers\System\BlueprintController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ReportController;
 
 // ==========================================
-// 0. THE GLOBAL DIAGNOSTIC PROBE
+// ZONE 1: THE SYSTEM DOMAIN (sys.bayam.test)
+// MUST BE AT THE TOP!
 // ==========================================
-Route::get('/diagnostic-global', function () {
-    return response()->json([
-        '0_Host' => request()->getHost(),
-        '1_Session_ID' => session()->getId(),
-        '2_Auth_Check' => \Illuminate\Support\Facades\Auth::check(),
-        '3_User_ID' => \Illuminate\Support\Facades\Auth::id(),
-        '4_Raw_Browser_Cookies' => request()->header('cookie'),
-    ]);
-})->middleware('web');
-// ==========================================
-// 1. THE SYSTEM CORE (Control DB)
-// ==========================================
-Route::domain('sys.bayam.test')->group(function () {
+Route::domain('sys.bayam.test')->middleware(['web', 'auth'])->group(function () {
 
-    Route::get('/', function () {
-        return view('welcome');
-    });
+    // 🚪 The User Lobby
+    Route::get('/lobby', function () {
+        return Inertia\Inertia::render('Dashboard');
+    })->name('central.lobby');
 
-    // THIS is the Launchpad that queries the companies!
+    // 🌌 The System Pulse
     Route::get('/dashboard', function () {
-        $user = Auth::user();
+        return Inertia\Inertia::render('System/Dashboard');
+    })->name('system.dashboard');
 
-        // Fetch all companies this user is allowed to see
-        $companies = \Illuminate\Support\Facades\DB::connection('control')->table('companies')
-            ->join('company_user', 'companies.id', '=', 'company_user.company_id')
-            ->where('company_user.user_id', $user->id)
-            ->where('companies.is_active', true)
-            ->select('companies.*', 'company_user.role')
-            ->get();
+    // 🏢 The Genesis Roster
+    Route::get('/companies', [CompanyController::class, 'index'])->name('system.companies.index');
+    Route::post('/companies', [CompanyController::class, 'store'])->name('system.companies.store');
 
-        return view('dashboard', ['companies' => $companies]);
-    })->middleware(['auth', 'verified'])->name('dashboard');
-
-    Route::middleware('auth')->group(function () {
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    });
-
-    // Binds authentication strictly to the sys domain
-    require __DIR__.'/auth.php';
+    // 🧬 The Blueprint Forge
+    Route::get('/blueprints', [BlueprintController::class, 'index'])->name('system.blueprints.index');
+    Route::get('/blueprints/create', [BlueprintController::class, 'create'])->name('system.blueprints.create'); // 👈 NEW
+    Route::post('/blueprints', [BlueprintController::class, 'store'])->name('system.blueprints.store'); // 👈 NEW
+    Route::get('/blueprints/{id}/edit', [BlueprintController::class, 'edit'])->name('system.blueprints.edit');
+    Route::put('/blueprints/{id}', [BlueprintController::class, 'update'])->name('system.blueprints.update');
 });
 
 // ==========================================
-// 2. THE TENANT OPERATIONS (Dynamic DB)
+// ZONE 2: THE TENANT DOMAIN (*.bayam.test)
+// MUST BE AFTER THE SYSTEM DOMAIN!
 // ==========================================
 Route::domain('{subdomain}.bayam.test')->middleware(['web', 'auth', IdentifyTenant::class])->group(function () {
 
+    // 📊 Tenant Dashboard (Light Theme - Inside the Vault)
     Route::get('/dashboard', function ($subdomain) {
-        // Grab the variables
-        $company = view()->shared('currentCompany');
-        $dbName = config('database.connections.tenant.database');
-
-        // Render the Vue Component instead of a Blade view!
-        return Inertia::render('TenantDashboard', [
-            'company' => $company,
-            'subdomain' => $subdomain,
-            'dbName' => $dbName
+        return Inertia\Inertia::render('TenantDashboard', [
+            'company' => view()->shared('currentCompany')
         ]);
     })->name('tenant.dashboard');
-//    Route::get('/diagnostic', function ($subdomain) {
-//        return response()->json([
-//            'Subdomain' => $subdomain,
-//            'Is_Logged_In' => \Illuminate\Support\Facades\Auth::check(),
-//            'User_Data' => \Illuminate\Support\Facades\Auth::user(),
-//            'Cookie_Received' => request()->hasCookie(config('session.cookie'))
-//        ]);
-//    });
+
+    // ✈️ Bookings Module
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
+    Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+    Route::get('/bookings/{id}/download-invoice', [BookingController::class, 'downloadInvoice'])->name('bookings.download');
+    Route::get('/bookings/{id}', [BookingController::class, 'show'])->name('bookings.show');
+    Route::put('/bookings/{id}/invoice', [BookingController::class, 'updateInvoice'])->name('bookings.invoice');
+    // 🏢 Clients Module
+    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+    Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+
+    // 📄 Contracts Module (NEW)
+    Route::post('/contracts', [ContractController::class, 'store'])->name('contracts.store');
+    Route::put('/contracts/{id}', [ContractController::class, 'update'])->name('contracts.update');
+    // 📈 Reports Module
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+
+    // Add this inside your authenticated route group:
+    Route::get('/admin/schemas', function () {
+        // If you haven't created the SchemaController yet, you can render it directly for now:
+        return \Inertia\Inertia::render('Admin/Schemas/Builder');
+    })->name('admin.schemas.builder');
 });
 
 // ==========================================
-// 3. THE NAKED DIAGNOSTIC ROUTE
+// ZONE 3: AUTHENTICATION & ROOT
 // ==========================================
-Route::domain('{subdomain}.bayam.test')->middleware('web')->group(function () {
-    Route::get('/diagnostic-naked', function ($subdomain) {
-        return response()->json([
-            '1_Subdomain' => $subdomain,
-            '2_Session_Domain_Config' => config('session.domain'),
-            '3_Cookie_Received_By_Server' => request()->hasCookie(config('session.cookie')),
-            '4_Is_Logged_In' => \Illuminate\Support\Facades\Auth::check(),
-            '5_User_ID' => \Illuminate\Support\Facades\Auth::id(),
-            '6_Has_Access' => \Illuminate\Support\Facades\DB::connection('control')
-                ->table('company_user')
-                ->where('user_id', \Illuminate\Support\Facades\Auth::id() ?? 0)
-                ->whereIn('company_id', function($query) use ($subdomain) {
-                    $query->select('id')->from('companies')->where('subdomain', $subdomain);
-                })->exists()
-        ]);
-    });
+Route::get('/', function () {
+    return redirect()->route('login');
 });
+
+require __DIR__.'/auth.php';
