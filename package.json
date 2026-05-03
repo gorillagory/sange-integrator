@@ -18,5 +18,13 @@
         "tailwindcss": "^4.2.2",
         "vite": "^8.0.0",
         "vue": "^3.5.32"
+    },
+    "dependencies": {
+        "@tiptap/core": "^3.22.5",
+        "@tiptap/extension-text-align": "^3.22.5",
+        "@tiptap/extension-underline": "^3.22.5",
+        "@tiptap/starter-kit": "^3.22.5",
+        "@tiptap/vue-3": "^3.22.5",
+        "vue-draggable-next": "^2.3.0"
     }
 }

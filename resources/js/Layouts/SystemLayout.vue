@@ -20,6 +20,9 @@
                 <Link href="/blueprints" class="pb-5 transition-colors border-b-2" :class="$page.url.startsWith('/blueprints') ? 'text-indigo-400 border-indigo-500' : 'border-transparent text-gray-400 hover:text-white hover:border-gray-600'">
                     Blueprint Forge
                 </Link>
+                <Link href="/users" class="pb-5 transition-colors border-b-2" :class="$page.url.startsWith('/users') ? 'text-indigo-400 border-indigo-500' : 'border-transparent text-gray-400 hover:text-white hover:border-gray-600'">
+                    Personnel Vault
+                </Link>
                 <Link href="#" class="pb-5 transition-colors border-b-2 border-transparent text-gray-400 hover:text-white hover:border-gray-600">
                     Nexus Library
                 </Link>

@@ -1,0 +1,24 @@
+{
+    "name": "Nexus Cortex Hybrid",
+    "build": { "dockerfile": "Dockerfile" },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "amiralizadeh9480.laravel-extra-intellisense",
+                "firebase.vscode-debug",
+                "googlecloudtools.cloudcode"
+            ]
+        },
+        "jetbrains": {
+            "plugins": ["com.jetbrains.php", "com.google.gct.core"]
+        }
+    },
+    "forwardPorts": [
+        8000, // Laravel Dev Server (APP_URL in .env)
+        3000, // React Frontend (Cortex)
+        5001, // Firestore Emulator
+        4000  // Firebase UI
+    ],
+    "postCreateCommand": "composer install && npm install",
+    "remoteUser": "vscode"
+}

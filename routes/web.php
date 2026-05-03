@@ -11,9 +11,10 @@ use App\Http\Controllers\ReportController;
 
 // ==========================================
 // ZONE 1: THE SYSTEM DOMAIN (sys.bayam.test)
-// MUST BE AT THE TOP!
 // ==========================================
-Route::domain('sys.bayam.test')->middleware(['web', 'auth'])->group(function () {
+
+// 🟢 ADDED 'role:super_admin' MIDDLEWARE
+Route::domain('sys.bayam.test')->middleware(['web', 'auth', 'role:super_admin'])->group(function () {
 
     // 🚪 The User Lobby
     Route::get('/lobby', function () {
@@ -31,10 +32,15 @@ Route::domain('sys.bayam.test')->middleware(['web', 'auth'])->group(function () 
 
     // 🧬 The Blueprint Forge
     Route::get('/blueprints', [BlueprintController::class, 'index'])->name('system.blueprints.index');
-    Route::get('/blueprints/create', [BlueprintController::class, 'create'])->name('system.blueprints.create'); // 👈 NEW
-    Route::post('/blueprints', [BlueprintController::class, 'store'])->name('system.blueprints.store'); // 👈 NEW
+    Route::get('/blueprints/create', [BlueprintController::class, 'create'])->name('system.blueprints.create');
+    Route::post('/blueprints', [BlueprintController::class, 'store'])->name('system.blueprints.store');
     Route::get('/blueprints/{id}/edit', [BlueprintController::class, 'edit'])->name('system.blueprints.edit');
     Route::put('/blueprints/{id}', [BlueprintController::class, 'update'])->name('system.blueprints.update');
+
+    // 👤 Personnel Vault (Super Admin CRUD) - NEW!
+    Route::get('/users', function () {
+        return Inertia\Inertia::render('Users/Index');
+    })->name('system.users.index');
 });
 
 // ==========================================
@@ -43,7 +49,7 @@ Route::domain('sys.bayam.test')->middleware(['web', 'auth'])->group(function () 
 // ==========================================
 Route::domain('{subdomain}.bayam.test')->middleware(['web', 'auth', IdentifyTenant::class])->group(function () {
 
-    // 📊 Tenant Dashboard (Light Theme - Inside the Vault)
+    // 📊 Tenant Dashboard
     Route::get('/dashboard', function ($subdomain) {
         return Inertia\Inertia::render('TenantDashboard', [
             'company' => view()->shared('currentCompany')
@@ -57,22 +63,35 @@ Route::domain('{subdomain}.bayam.test')->middleware(['web', 'auth', IdentifyTena
     Route::get('/bookings/{id}/download-invoice', [BookingController::class, 'downloadInvoice'])->name('bookings.download');
     Route::get('/bookings/{id}', [BookingController::class, 'show'])->name('bookings.show');
     Route::put('/bookings/{id}/invoice', [BookingController::class, 'updateInvoice'])->name('bookings.invoice');
+
     // 🏢 Clients Module
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
     Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
     Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
 
-    // 📄 Contracts Module (NEW)
+    // 📄 Contracts Module
     Route::post('/contracts', [ContractController::class, 'store'])->name('contracts.store');
     Route::put('/contracts/{id}', [ContractController::class, 'update'])->name('contracts.update');
+
     // 📈 Reports Module
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
-    // Add this inside your authenticated route group:
-    Route::get('/admin/schemas', function () {
-        // If you haven't created the SchemaController yet, you can render it directly for now:
-        return \Inertia\Inertia::render('Admin/Schemas/Builder');
-    })->name('admin.schemas.builder');
+    // 🧰 Admin Access - Schema Vectors
+    Route::get('/admin/schemas', [\App\Http\Controllers\Admin\SchemaController::class, 'index'])->name('admin.schemas.index');
+    Route::get('/admin/schemas/create', [\App\Http\Controllers\Admin\SchemaController::class, 'create'])->name('admin.schemas.create');
+    Route::post('/admin/schemas', [\App\Http\Controllers\Admin\SchemaController::class, 'store'])->name('admin.schemas.store');
+    Route::get('/admin/schemas/{id}/edit', [\App\Http\Controllers\Admin\SchemaController::class, 'edit'])->name('admin.schemas.edit');
+    Route::put('/admin/schemas/{id}', [\App\Http\Controllers\Admin\SchemaController::class, 'update'])->name('admin.schemas.update');
+    Route::delete('/admin/schemas/{id}', [\App\Http\Controllers\Admin\SchemaController::class, 'destroy'])->name('admin.schemas.destroy');
+    // 📄 Document Template Forge
+    Route::get('/admin/documents', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'index'])->name('admin.documents.index');
+    Route::get('/admin/documents/create', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'create'])->name('admin.documents.create');
+    Route::post('/admin/documents', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'store'])->name('admin.documents.store');
+    Route::get('/admin/documents/{id}/edit', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'edit'])->name('admin.documents.edit');
+    Route::put('/admin/documents/{id}', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'update'])->name('admin.documents.update');
+    Route::delete('/admin/documents/{id}', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'destroy'])->name('admin.documents.destroy');
+
+    Route::get('/admin/documents/{subdomain}/{id}/preview', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'preview'])->name('admin.documents.preview');
 });
 
 // ==========================================

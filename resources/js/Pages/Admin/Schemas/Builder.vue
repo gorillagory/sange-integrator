@@ -4,232 +4,184 @@
             <Breadcrumbs :items="[
                 { label: 'Admin Settings', url: null },
                 { label: 'Service Vectors', url: '/admin/schemas' },
-                { label: 'Vector Builder', url: null }
+                { label: isEditing ? `Edit: ${form.display_name}` : 'Create New Vector', url: null }
             ]" />
         </template>
 
         <div class="mb-8 flex justify-between items-end">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Schema Vector Builder</h1>
-                <p class="text-sm text-gray-500 mt-1">Design dynamic operational payloads and UI rules for master bookings.</p>
+                <h1 class="text-2xl font-bold text-gray-900">{{ isEditing ? 'Edit Schema Vector' : 'Create New Vector' }}</h1>
+                <p class="text-sm text-gray-500 mt-1">{{ isEditing ? `Modifying ${form.display_name}.` : 'Design operational payloads for master bookings.' }}</p>
             </div>
-            <button @click="saveSchema" :disabled="form.processing" class="px-6 py-2.5 bg-[var(--brand-600)] hover:bg-[var(--brand-500)] text-white text-sm font-bold rounded-xl transition shadow-lg flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                Deploy Schema to Production
+            <button
+                @click="attemptSave"
+                :disabled="form.processing"
+                class="px-6 py-2.5 bg-[var(--brand-600)] hover:bg-[var(--brand-500)] text-white text-sm font-bold rounded-xl transition shadow-lg flex items-center gap-2"
+                :class="{'animate-shake bg-red-600': isShaking}"
+            >
+                <svg v-if="!form.processing" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                <svg v-else class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                {{ isEditing ? 'Update & Sync Vector' : 'Deploy Schema to Production' }}
             </button>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start pb-20">
-
-            <div class="xl:col-span-3 space-y-6">
+            <div class="xl:col-span-4 space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h3 class="font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">1. Core Definition</h3>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Display Name <span class="text-red-500">*</span></label>
-                            <input v-model="form.display_name" @input="generateSystemKey" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:bg-white focus:border-[var(--brand-500)]" placeholder="e.g. Flight Ticketing">
+                            <input v-model="form.display_name" @input="generateSystemKey" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:bg-white focus:border-[var(--brand-500)]" placeholder="e.g. Hotel Accommodation">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">System Key (Immutable) <span class="text-red-500">*</span></label>
-                            <input v-model="form.service_type" type="text" class="w-full bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-600" placeholder="flight_ticketing" :readonly="isEditing">
-                            <p class="text-[9px] text-gray-400 mt-1">Used internally for database mapping.</p>
+                            <input v-model="form.service_type" type="text" class="w-full bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-600" placeholder="hotel_accommodation" :readonly="isEditing">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Target Industry</label>
-                            <select v-model="form.industry" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:bg-white focus:border-[var(--brand-500)]">
+                            <select v-model="form.industry" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:bg-white">
                                 <option value="travel">Travel & Tourism</option>
                                 <option value="logistics">Logistics</option>
                                 <option value="events">Event Management</option>
                             </select>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="xl:col-span-5 space-y-4">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-gray-900">2. Payload Attributes ({{ form.schema_payload.length }})</h3>
-                    <button @click.prevent="addField" class="text-xs font-bold text-[var(--brand-600)] hover:text-[var(--brand-800)] flex items-center gap-1">
-                        + Add Attribute
-                    </button>
-                </div>
+                        <div class="pt-3 border-t border-gray-100">
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Pricing Units</label>
 
-                <div v-if="form.schema_payload.length === 0" class="p-8 border-2 border-dashed border-gray-200 rounded-2xl text-center text-gray-500 text-sm font-medium bg-gray-50">
-                    No attributes defined. Click '+ Add Attribute' to begin building the schema vector.
-                </div>
-
-                <div v-for="(field, index) in form.schema_payload" :key="index" class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm relative group transition hover:border-[var(--brand-300)]">
-                    <button @click.prevent="removeField(index)" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-
-                    <div class="grid grid-cols-2 gap-4 mb-4 pr-6">
-                        <div>
-                            <label class="block text-[10px] font-bold text-[var(--brand-600)] uppercase mb-1">UI Label</label>
-                            <input v-model="field.label" @input="generateFieldKey(field)" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm" placeholder="e.g. Passenger Name">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">JSON Key</label>
-                            <input v-model="field.key" type="text" class="w-full bg-gray-100 border border-gray-200 rounded-md px-3 py-1.5 text-sm font-mono text-gray-600" placeholder="passenger_name">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Component</label>
-                            <select v-model="field.ui_component" class="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-xs">
-                                <option value="text_input">Text Input</option>
-                                <option value="textarea">Textarea (Large)</option>
-                                <option value="file">File Upload</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Grid Width</label>
-                            <select v-model="field.grid_span" class="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-xs">
-                                <option :value="1">Half Width (1 Col)</option>
-                                <option :value="2">Full Width (2 Col)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Requirement</label>
-                            <div class="flex items-center h-8 gap-2">
-                                <input type="checkbox" :checked="field.rules.includes('required')" @change="toggleRequired(field, $event.target.checked)" class="text-[var(--brand-600)] rounded border-gray-300 focus:ring-[var(--brand-500)]">
-                                <span class="text-xs text-gray-600 font-medium">Required</span>
+                            <div class="flex items-center gap-2 mb-3">
+                                <input
+                                    v-model="newUnit"
+                                    @keydown.enter.prevent="addUnit"
+                                    type="text"
+                                    class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:bg-white focus:border-[var(--brand-500)]"
+                                    placeholder="Type unit and press Enter (e.g., Pax, Room)"
+                                >
+                                <button @click.prevent="addUnit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">Add</button>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-[var(--brand-600)] uppercase mb-1">Data Structure</label>
-                            <div class="flex items-center h-8 gap-2">
-                                <input type="checkbox" v-model="field.is_array" class="text-[var(--brand-600)] rounded border-gray-300 focus:ring-[var(--brand-500)]">
-                                <span class="text-xs text-gray-600 font-medium" :class="{'text-[var(--brand-600)] font-bold': field.is_array}">Repeatable List</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="xl:col-span-4 space-y-6 sticky top-8">
+                            <div class="flex flex-wrap gap-2 min-h-[36px] p-2 bg-gray-50 border border-gray-100 rounded-lg items-center">
+                                <span v-if="form.pricing_units.length === 0" class="text-[10px] text-gray-400 italic">No units added. Default calculation is 1.</span>
 
-                <div class="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden shadow-inner">
-                    <div class="bg-gray-200 px-4 py-2 border-b border-gray-300">
-                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Agent UI Preview</span>
-                    </div>
-                    <div class="p-5">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div v-for="field in form.schema_payload" :key="field.key" :class="field.grid_span === 2 || field.ui_component === 'textarea' ? 'md:col-span-2' : 'md:col-span-1'">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex justify-between items-center">
-                                    <span>{{ field.label || 'Label' }} <span v-if="field.rules.includes('required')" class="text-red-500">*</span></span>
-                                    <span v-if="field.is_array" class="text-[9px] text-[var(--brand-500)] bg-[var(--brand-50)] px-1.5 py-0.5 rounded">List</span>
-                                </label>
-
-                                <div v-if="field.is_array" class="space-y-2">
-                                    <input v-if="field.ui_component === 'text_input' || !field.ui_component" type="text" disabled class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm opacity-70" :placeholder="(field.placeholder || '...') + ' 1'">
-                                    <textarea v-else-if="field.ui_component === 'textarea'" rows="2" disabled class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm opacity-70" placeholder="..."></textarea>
-                                    <button disabled class="text-[10px] font-bold text-[var(--brand-600)] flex items-center gap-1 mt-1 opacity-50">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                        Add another
+                                <span
+                                    v-for="(unit, index) in form.pricing_units"
+                                    :key="index"
+                                    class="flex items-center gap-1.5 bg-white border border-[var(--brand-200)] px-2 py-1 rounded shadow-sm group"
+                                >
+                                    <span class="text-[10px] font-bold text-[var(--brand-700)] uppercase tracking-wider">{{ unit }}</span>
+                                    <button @click.prevent="removeUnit(index)" class="text-[var(--brand-400)] hover:text-red-500 focus:outline-none transition opacity-50 group-hover:opacity-100" title="Remove unit">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </button>
-                                </div>
-                                <div v-else>
-                                    <input v-if="field.ui_component === 'text_input' || !field.ui_component" type="text" disabled class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm opacity-70" :placeholder="field.placeholder || '...'">
-                                    <textarea v-else-if="field.ui_component === 'textarea'" rows="2" disabled class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm opacity-70" placeholder="..."></textarea>
-                                    <div v-else-if="field.ui_component === 'file'" class="w-full bg-gray-100 border border-gray-300 border-dashed rounded-lg px-3 py-2 text-xs text-gray-400 text-center">Attachment Placeholder</div>
-                                </div>
+                                </span>
                             </div>
+                            <p class="text-[8px] text-gray-400 mt-2 uppercase tracking-widest">Calculates as: Base Price × {{ form.pricing_units.length > 0 ? form.pricing_units.join(' × ') : '1' }}</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-gray-900 rounded-2xl border border-gray-700 shadow-xl overflow-hidden">
-                    <div class="bg-black/50 px-4 py-2 border-b border-gray-800 flex justify-between items-center">
-                        <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Generated JSON Vector</span>
-                    </div>
-                    <pre class="p-4 text-xs text-gray-300 font-mono overflow-x-auto max-h-96 scrollbar-thin scrollbar-thumb-gray-700">{{ compiledJson }}</pre>
-                </div>
+                <VisualDocumentEditor
+                    v-model="form.document_output"
+                    :schema-fields="form.schema_payload"
+                />
             </div>
 
+            <div class="xl:col-span-5">
+                <AttributeManager v-model="form.schema_payload" />
+            </div>
+
+            <div class="xl:col-span-3 sticky top-6">
+                <SchemaPreview :fields="form.schema_payload" :compiledJson="compiledJson" />
+            </div>
         </div>
+
+        <GlobalToast ref="toastRef" />
     </TenantLayout>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
+
+// Internal Components
 import TenantLayout from '../../../Layouts/TenantLayout.vue';
 import Breadcrumbs from '../../../Components/UI/Breadcrumbs.vue';
+import SchemaPreview from './Components/SchemaPreview.vue';
+import GlobalToast from '../../../Components/GlobalToast.vue';
+import VisualDocumentEditor from './Components/VisualDocumentEditor.vue';
+import AttributeManager from './Components/AttributeManager.vue';
 
-const props = defineProps({
-    schema: {
-        type: Object,
-        default: null
-    }
-});
+// Composables
+import { useSchemaCompiler } from './Composables/useSchemaCompiler';
 
+const props = defineProps({ schema: { type: Object, default: null } });
 const isEditing = computed(() => !!props.schema);
+const toastRef = ref(null);
+const isShaking = ref(false);
 
+// Extract Data
+const getInitialPayload = () => {
+    if (!props.schema?.schema_payload) return [];
+    const parsed = typeof props.schema.schema_payload === 'string' ? JSON.parse(props.schema.schema_payload) : props.schema.schema_payload;
+    return (parsed.fields || []).map((f, i) => ({ ...f, order: f.order ?? i, _show_advanced: false, _is_minimized: true, _key_manually_edited: true }));
+};
+
+const getInitialData = (key, fallback) => {
+    if (!props.schema?.schema_payload) return fallback;
+    const parsed = typeof props.schema.schema_payload === 'string' ? JSON.parse(props.schema.schema_payload) : props.schema.schema_payload;
+    return parsed[key] || fallback;
+};
+
+// Form State
 const form = useForm({
     display_name: props.schema?.display_name || '',
     service_type: props.schema?.service_type || '',
     industry: props.schema?.industry || 'travel',
-    schema_payload: props.schema?.schema_payload ? JSON.parse(props.schema.schema_payload) : []
+    schema_payload: getInitialPayload(),
+    document_output: getInitialData('document_output', ''),
+    pricing_units: getInitialData('pricing_units', [])
 });
 
+// JSON Compilation Magic via Composable
+const { compiledJson, hasGlobalDuplicates } = useSchemaCompiler(form);
+
+// Dynamic Units
+const newUnit = ref('');
+const addUnit = () => {
+    const val = newUnit.value.trim().toLowerCase();
+    if (val && !form.pricing_units.includes(val)) form.pricing_units.push(val);
+    newUnit.value = '';
+};
+const removeUnit = (index) => form.pricing_units.splice(index, 1);
+
+// Generate Key
 const generateSystemKey = () => {
     if (isEditing.value) return;
     form.service_type = form.display_name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
 };
 
-const generateFieldKey = (field) => {
-    if (!field.key || field.key === '') {
-        field.key = field.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+// Save Logic
+const attemptSave = () => {
+    if (hasGlobalDuplicates.value) {
+        isShaking.value = true;
+        toastRef.value.addToast('Cannot deploy: Resolve duplicate keys first!', 'error');
+        setTimeout(() => { isShaking.value = false; }, 600);
+        return;
     }
-};
 
-const addField = () => {
-    form.schema_payload.push({
-        key: '',
-        label: '',
-        type: 'string',
-        ui_component: 'text_input',
-        grid_span: 1,
-        placeholder: '',
-        rules: [],
-        is_array: false // Initialize boolean
-    });
-};
+    const payloadToSave = { ...form.data(), schema_payload: JSON.parse(compiledJson.value) };
+    const method = isEditing.value ? 'put' : 'post';
+    const url = isEditing.value ? `/admin/schemas/${props.schema.id}` : '/admin/schemas';
 
-const removeField = (index) => {
-    form.schema_payload.splice(index, 1);
-};
-
-const toggleRequired = (field, isRequired) => {
-    if (isRequired) {
-        if (!field.rules.includes('required')) field.rules.push('required');
-    } else {
-        field.rules = field.rules.filter(r => r !== 'required');
-    }
-};
-
-const compiledJson = computed(() => {
-    const payload = {
-        fields: form.schema_payload.map(f => ({
-            key: f.key,
-            type: f.type,
-            label: f.label,
-            rules: f.rules,
-            grid_span: f.grid_span,
-            ui_component: f.ui_component,
-            is_array: f.is_array || false // Map boolean to payload
-        }))
-    };
-    return JSON.stringify(payload, null, 4);
-});
-
-const saveSchema = () => {
-    if (isEditing.value) {
-        form.put(`/admin/schemas/${props.schema.id}`);
-    } else {
-        form.post('/admin/schemas');
-    }
+    form.transform(() => payloadToSave)[method](url);
 };
 </script>
+
+<style scoped>
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+.animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
+</style>

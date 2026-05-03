@@ -8,23 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // This table lives in the sange_control database!
-        Schema::create('clients', function (Blueprint $table) {
+        // 🟢 Explicitly connection('control')
+        Schema::connection('control')->create('clients', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique(); // Petronas is one entity globally
+            $table->string('name')->unique();
             $table->string('registration_number')->nullable();
             $table->string('logo_path')->nullable();
-
-            // Global HQ Contact
             $table->string('hq_contact_person')->nullable();
             $table->string('hq_contact_email')->nullable();
-
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('clients');
+        Schema::connection('control')->dropIfExists('clients');
     }
 };

@@ -50,9 +50,14 @@
                     Admin Access
                 </div>
 
-                <Link href="/admin/schemas" class="group relative flex items-center h-12 mx-4 px-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all" :class="{ '!bg-[var(--brand-500)] !text-white shadow-md': $page.url.startsWith('/admin') }">
+                <Link href="/admin/schemas" class="group relative flex items-center h-12 mx-4 px-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all" :class="{ '!bg-[var(--brand-500)] !text-white shadow-md': $page.url.startsWith('/admin/schemas') }">
                     <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
                     <span class="font-medium whitespace-nowrap overflow-hidden transition-all duration-300" :class="isExpanded ? 'w-auto opacity-100 ml-3' : 'w-0 opacity-0 ml-0'">Schema Vectors</span>
+                </Link>
+
+                <Link href="/admin/documents" class="group relative flex items-center h-12 mx-4 px-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all" :class="{ '!bg-[var(--brand-500)] !text-white shadow-md': $page.url.startsWith('/admin/documents') }">
+                    <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span class="font-medium whitespace-nowrap overflow-hidden transition-all duration-300" :class="isExpanded ? 'w-auto opacity-100 ml-3' : 'w-0 opacity-0 ml-0'">Document Forge</span>
                 </Link>
 
             </nav>
@@ -160,6 +165,9 @@
                         <Link href="/admin/schemas" class="h-full flex items-center border-b-2 transition-colors" :class="$page.url.startsWith('/admin/schemas') ? 'border-[var(--brand-600)] text-[var(--brand-700)]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
                             Schema Vectors
                         </Link>
+                        <Link href="/admin/documents" class="h-full flex items-center border-b-2 transition-colors" :class="$page.url.startsWith('/admin/documents') ? 'border-[var(--brand-600)] text-[var(--brand-700)]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+                            Document Forge
+                        </Link>
                         <Link href="#" class="h-full flex items-center border-b-2 transition-colors border-transparent text-gray-500 hover:text-gray-700">
                             System Settings
                         </Link>
@@ -191,7 +199,6 @@ const currentCompany = computed(() => page.props.currentCompany);
 const isMobileMenuOpen = ref(false);
 const isProfileMenuOpen = ref(false);
 
-// 🟢 New state to control the sidebar expansion
 const isExpanded = ref(false);
 
 const { addToast } = useToast();

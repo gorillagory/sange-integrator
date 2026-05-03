@@ -9,10 +9,8 @@ use Inertia\Inertia;
 
 class BookingController extends Controller
 {
-
     public function index()
     {
-        // Fetch bookings, load the client relationship, order by newest first
         $bookings = Booking::with('client')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -21,19 +19,15 @@ class BookingController extends Controller
             'bookings' => $bookings
         ]);
     }
-    /**
-     * Show the Shape-Shifter Booking Form.
-     */
+
     public function create()
     {
         $company = view()->shared('currentCompany');
 
-        // 🛠️ FIXED: Removed the 'is_active' filter to match your actual database schema
         $schemas = \App\Models\ServiceSchema::where('industry', $company->industry)
             ->orderBy('display_name')
             ->get();
 
-        // 🌐 Fetch Global Clients & Local Contracts for the Autocomplete Engine
         $clients = \App\Models\Client::with('contracts')->orderBy('name')->get();
 
         return Inertia::render('Bookings/Create', [
@@ -44,19 +38,18 @@ class BookingController extends Controller
 
     public function store(Request $request)
     {
-        // 🛡️ THE FIX: Explicitly validate EVERY nested key so Laravel doesn't strip them!
+        // 🛡️ Explicitly define rules for the new Agency Pricing Flow
         $validated = $request->validate([
             'client_id' => 'required|exists:control.clients,id',
             'contract_no' => 'required|string',
             'services' => 'required|array|min:1',
             'services.*.service_type' => 'required|string',
-            'services.*.service_details' => 'nullable|array',
-            'services.*.unit_fare' => 'nullable|numeric',
-            'services.*.tax_type' => 'nullable|string|in:%,RM',
-            'services.*.tax_value' => 'nullable|numeric',
-            'services.*.markup_type' => 'nullable|string|in:%,RM',
-            'services.*.markup_value' => 'nullable|numeric',
+            'services.*.service_details' => 'nullable|array', // Allows nested dynamic schema data
             'services.*.qty' => 'required|integer|min:1',
+            'services.*.unit_fare' => 'required|numeric', // Supplier Cost
+            'services.*.tax_type' => 'required|string|in:%,RM',
+            'services.*.tax_value' => 'required|numeric',
+            'services.*.client_price' => 'required|numeric', // Total Charged to Client (per unit)
         ]);
 
         $refNo = 'BKG-' . date('Ym') . '-' . strtoupper(\Illuminate\Support\Str::random(5));
@@ -67,25 +60,23 @@ class BookingController extends Controller
         $cartPayload = [];
 
         foreach ($validated['services'] as $item) {
-            $base = floatval($item['unit_fare'] ?? 0);
             $qty = intval($item['qty'] ?? 1);
+            $base = floatval($item['unit_fare'] ?? 0);
 
-            // 🧮 SAFE HYBRID PRICING CALCULATOR
-            $taxType = $item['tax_type'] ?? '%';
+            // Tax Engine
+            $taxType = $item['tax_type'] ?? 'RM';
             $taxAmount = $taxType === '%'
                 ? $base * (floatval($item['tax_value'] ?? 0) / 100)
                 : floatval($item['tax_value'] ?? 0);
 
-            $markupType = $item['markup_type'] ?? 'RM';
-            $markupAmount = $markupType === '%'
-                ? $base * (floatval($item['markup_value'] ?? 0) / 100)
-                : floatval($item['markup_value'] ?? 0);
+            // 🧮 Auto-Calculate Profit Margin
+            $clientPrice = floatval($item['client_price'] ?? 0);
+            $markupAmount = $clientPrice - $base - $taxAmount; // Profit = Client Price - Cost - Tax
 
-            $linePrice = $base + $taxAmount + $markupAmount;
-            $lineTotal = $linePrice * $qty;
+            $lineTotal = $clientPrice * $qty;
             $totalAmount += $lineTotal;
 
-            // 📎 DYNAMIC ATTACHMENT HANDLER
+            // 📎 Process Dynamic Details & Files
             $processedDetails = [];
             if (!empty($item['service_details'])) {
                 foreach ($item['service_details'] as $key => $value) {
@@ -106,10 +97,10 @@ class BookingController extends Controller
                 'tax_type' => $taxType,
                 'tax_value' => floatval($item['tax_value'] ?? 0),
                 'tax' => $taxAmount,
-                'markup_type' => $markupType,
-                'markup_value' => floatval($item['markup_value'] ?? 0),
+                'markup_type' => 'RM', // Hardcoded since we derive it from final client price
+                'markup_value' => $markupAmount,
                 'markup' => $markupAmount,
-                'price' => $linePrice,
+                'price' => $clientPrice,
                 'qty' => $qty
             ];
         }
@@ -123,13 +114,12 @@ class BookingController extends Controller
             'status' => 'Draft'
         ]);
 
-        // 🛡️ BULLETPROOF TENANT ID CAPTURE
         $bookingId = $booking->id ?? \App\Models\Booking::where('reference_no', $refNo)->value('id');
 
         return redirect()->route('bookings.show', ['id' => $bookingId])
             ->with('success', 'Master Booking constructed. Ready for final assignment.');
     }
-// 🛠️ FIX: Added $subdomain as the first parameter to absorb the route domain
+
     public function show($subdomain, $id)
     {
         $booking = \App\Models\Booking::with('client')->findOrFail($id);
@@ -141,7 +131,6 @@ class BookingController extends Controller
         ]);
     }
 
-    // 🛠️ FIX: Added $subdomain right after the Request object
     public function updateInvoice(Request $request, $subdomain, $id)
     {
         $booking = \App\Models\Booking::findOrFail($id);
@@ -165,23 +154,17 @@ class BookingController extends Controller
         return back()->with('success', 'Invoice locked. Ready for PDF Generation.');
     }
 
-    // 🛠️ FIX: Added $subdomain as the first parameter
     public function downloadInvoice($subdomain, $id)
     {
         $booking = \App\Models\Booking::findOrFail($id);
 
-        // 🛡️ Security Check: Ensure invoice was actually generated
         if (!$booking->invoice_no || !$booking->client_id) {
             return back()->withErrors(['error' => 'Invoice parameters missing. Please lock the invoice first.']);
         }
 
-        // 🌐 Fetch the Global Client from the Control DB
         $client = \App\Models\Client::find($booking->client_id);
-
-        // 🏢 Fetch the specific Local Contract
         $contract = \App\Models\Contract::where('contract_no', $booking->contract_no)->first();
 
-        // 📄 Generate the PDF using a Blade view
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', [
             'booking' => $booking,
             'client' => $client,
