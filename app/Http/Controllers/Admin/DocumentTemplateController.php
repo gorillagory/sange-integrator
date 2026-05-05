@@ -3,139 +3,146 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreDocumentTemplateRequest;
+use App\Http\Requests\Admin\UpdateDocumentTemplateRequest;
 use App\Models\DocumentTemplate;
+use App\Services\DocumentPreviewPayloadFactory;
+use App\Services\DocumentTemplateLayoutService;
 use App\Services\DocumentVariableService;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Services\PdfCompilerService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class DocumentTemplateController extends Controller
 {
-    public function index()
+    public function __construct(
+        private readonly DocumentTemplateLayoutService $layoutService,
+        private readonly DocumentPreviewPayloadFactory $previewPayloadFactory,
+        private readonly PdfCompilerService $compiler,
+    ) {
+    }
+
+    public function index(): Response
     {
-        // Add $subdomain parameter to method signature if your routes require it
         return Inertia::render('Admin/Documents/Index', [
-            'templates' => DocumentTemplate::orderBy('name')->get()
+            'templates' => DocumentTemplate::query()
+                ->orderBy('name')
+                ->get()
+                ->map(fn (DocumentTemplate $template) => [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'code' => $template->code,
+                    'document_type' => $template->document_type,
+                    'layout_vector' => $template->layout_vector,
+                    'created_at' => optional($template->created_at)?->toDateTimeString(),
+                    'updated_at' => optional($template->updated_at)?->toDateTimeString(),
+                ])
+                ->values(),
         ]);
     }
 
-    public function create()
+    public function create(): Response
     {
         return Inertia::render('Admin/Documents/Builder', [
-            // Pass all dictionaries to Vue so we don't need to make AJAX calls when changing types
-            'dictionaries' => $this->getAllDictionaries()
+            'template' => null,
+            'dictionaries' => $this->getAllDictionaries(),
+            'documentTypes' => DocumentVariableService::supportedDocumentTypes(),
+            'defaultLayoutVector' => $this->layoutService->defaultLayoutVector(),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreDocumentTemplateRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|unique:document_templates,code',
-            'document_type' => 'required|string',
-            'layout_vector' => 'required|array'
+        $validated = $request->validated();
+
+        $template = DocumentTemplate::create([
+            'name' => $validated['name'],
+            'code' => $validated['code'],
+            'document_type' => $validated['document_type'],
+            'layout_vector' => $this->layoutService->normalize($validated['layout_vector']),
         ]);
 
-        DocumentTemplate::create($validated);
-
-        return redirect()->route('admin.documents.index')->with('success', 'Template Created Successfully');
+        return redirect()
+            ->route('admin.documents.edit', [
+                'subdomain' => request()->route('subdomain'),
+                'id' => $template->id,
+            ])
+            ->with('success', 'Template created successfully.');
     }
 
-    public function edit($subdomain, $id)
+    public function edit(string $subdomain, int $id): Response
     {
+        $template = DocumentTemplate::query()->findOrFail($id);
+
         return Inertia::render('Admin/Documents/Builder', [
-            'template' => DocumentTemplate::findOrFail($id),
-            'dictionaries' => $this->getAllDictionaries()
+            'template' => [
+                'id' => $template->id,
+                'name' => $template->name,
+                'code' => $template->code,
+                'document_type' => $template->document_type,
+                'layout_vector' => $this->layoutService->normalize($template->layout_vector),
+                'created_at' => optional($template->created_at)?->toDateTimeString(),
+                'updated_at' => optional($template->updated_at)?->toDateTimeString(),
+            ],
+            'dictionaries' => $this->getAllDictionaries(),
+            'documentTypes' => DocumentVariableService::supportedDocumentTypes(),
+            'defaultLayoutVector' => $this->layoutService->defaultLayoutVector(),
         ]);
     }
 
-    public function update(Request $request, $subdomain, $id)
+    public function update(UpdateDocumentTemplateRequest $request, string $subdomain, int $id)
     {
-        $template = DocumentTemplate::findOrFail($id);
+        $template = DocumentTemplate::query()->findOrFail($id);
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|unique:document_templates,code,' . $id,
-            'document_type' => 'required|string',
-            'layout_vector' => 'required|array'
+        $template->update([
+            'name' => $validated['name'],
+            'code' => $validated['code'],
+            'document_type' => $validated['document_type'],
+            'layout_vector' => $this->layoutService->normalize($validated['layout_vector']),
         ]);
 
-        $template->update($validated);
-
-        // Use back() so the Vue page doesn't reload and lose the user's zoom/preview state
-        return back()->with('success', 'Vector Synced Successfully');
+        return back()->with('success', 'Template synced successfully.');
     }
 
-    public function destroy($subdomain, $id)
+    public function destroy(string $subdomain, int $id)
     {
-        DocumentTemplate::findOrFail($id)->delete();
-        return back()->with('success', 'Template Shattered');
+        DocumentTemplate::query()->findOrFail($id)->delete();
+
+        return back()->with('success', 'Template deleted successfully.');
     }
 
-    /**
-     * Helper to bundle all dictionaries at once for the Vue frontend
-     */
+    public function preview(string $subdomain, int $id)
+    {
+        $template = DocumentTemplate::query()->findOrFail($id);
+
+        $normalizedTemplate = new DocumentTemplate([
+            'name' => $template->name,
+            'code' => $template->code,
+            'document_type' => $template->document_type,
+            'layout_vector' => $this->layoutService->normalize($template->layout_vector),
+        ]);
+
+        $payload = $this->previewPayloadFactory->make($template->document_type);
+        $html = $this->compiler->compileToHtml($normalizedTemplate, $payload);
+
+        $page = $normalizedTemplate->layout_vector['page'] ?? [];
+        $size = strtolower((string) ($page['size'] ?? 'a4'));
+        $orientation = (string) ($page['orientation'] ?? 'portrait');
+
+        $pdf = Pdf::loadHTML($html);
+        $pdf->setPaper($size, $orientation);
+
+        return $pdf->stream($template->code.'_preview.pdf', ['Attachment' => false]);
+    }
+
     private function getAllDictionaries(): array
     {
-        return [
-            'invoice' => DocumentVariableService::getDictionary('invoice'),
-            'receipt' => DocumentVariableService::getDictionary('receipt'),
-            'quote' => DocumentVariableService::getDictionary('quote'),
-            'itinerary' => DocumentVariableService::getDictionary('itinerary'),
-        ];
-    }
-
-    /**
-     * Injects mock data into the template and streams a physical PDF to the browser.
-     */
-    public function preview($subdomain, $id, PdfCompilerService $compiler)
-    {
-        $template = DocumentTemplate::findOrFail($id);
-
-        // 1. Generate Mock Data tailored to the exact keys in your JSON Vector
-        $mockData = [
-            'client_name' => 'Acme Corporation Sdn Bhd',
-            'client_address_1' => 'Suite 101, Innovation Tower',
-            'client_address_2' => 'Jalan Technology, Cyberjaya',
-            'client_address_3' => '63000 Selangor, Malaysia',
-            'client_referral' => 'Ref: John Doe (Sales)',
-
-            'invoice_number' => 'INV-' . date('Y') . '-00912',
-            'invoice_date' => date('d M Y'),
-            'invoice_month' => date('F Y'),
-            'invoice_personnel' => 'Sarah Jane',
-            'invoice_term' => 'Net 30 Days',
-            'contract_title' => 'MASTER SERVICES AGREEMENT',
-
-            // This maps exactly to your "items" Data Table loop!
-            'items' => [
-                ['name' => 'Roundtrip Flight (KUL - NRT)', 'total' => 'RM 2,500.00'],
-                ['name' => 'Hotel Accommodation (3 Nights)', 'total' => 'RM 1,200.00'],
-                ['name' => 'Private Airport Transfer', 'total' => 'RM 150.00'],
-                ['name' => 'Tourism Tax & Fees', 'total' => 'RM 50.00'],
-            ],
-
-            // This maps to your Bulleted List loop!
-            'list_items' => [
-                'All payments are non-refundable after 14 days.',
-                'Please quote the Invoice Number on your bank transfer.',
-                'Make checks payable to BAYAM TRAVEL SDN BHD.'
-            ]
-        ];
-
-        // 2. Pass the JSON Vector and the Mock Data to our Compiler
-        $html = $compiler->compileToHtml($template, $mockData);
-
-        // 3. Generate the physical PDF
-        $pdf = Pdf::loadHTML($html);
-
-        // Optional: Set paper size based on template settings
-        $size = $template->layout_vector['page']['size'] ?? 'A4';
-        $orientation = $template->layout_vector['page']['orientation'] ?? 'portrait';
-        $pdf->setPaper(strtolower($size), $orientation);
-
-        // 4. Stream directly to the browser in a new tab
-        return $pdf->stream($template->code . '_preview.pdf', ['Attachment' => false]);
+        return collect(DocumentVariableService::supportedDocumentTypes())
+            ->mapWithKeys(fn (string $type) => [
+                $type => DocumentVariableService::getDictionary($type),
+            ])
+            ->all();
     }
 }

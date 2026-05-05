@@ -3,6 +3,7 @@
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\System\BlueprintController;
 use App\Http\Controllers\System\CompanyController;
@@ -12,7 +13,7 @@ use App\Http\Middleware\ResetPermissionTeam;
 use Illuminate\Support\Facades\Route;
 
 Route::domain('sys.bayam.test')
-    ->middleware(['web', 'auth', ResetPermissionTeam::class, 'role:super_admin'])
+    ->middleware(['web', 'auth', ResetPermissionTeam::class, 'role:super_admin|system_admin'])
     ->group(function () {
         Route::get('/lobby', function () {
             return Inertia\Inertia::render('Dashboard');
@@ -39,7 +40,7 @@ Route::domain('sys.bayam.test')
 Route::domain('{subdomain}.bayam.test')
     ->middleware(['web', 'auth', IdentifyTenant::class])
     ->group(function () {
-        Route::get('/dashboard', function ($subdomain) {
+        Route::get('/dashboard', function () {
             return Inertia\Inertia::render('TenantDashboard', [
                 'company' => view()->shared('currentCompany'),
             ]);
@@ -61,14 +62,16 @@ Route::domain('{subdomain}.bayam.test')
 
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
-        Route::middleware(['role_or_permission:agency_admin|document_manager'])->group(function () {
+        Route::middleware(['super_admin_or_tenant_role:agency_admin'])->group(function () {
             Route::get('/admin/schemas', [\App\Http\Controllers\Admin\SchemaController::class, 'index'])->name('admin.schemas.index');
             Route::get('/admin/schemas/create', [\App\Http\Controllers\Admin\SchemaController::class, 'create'])->name('admin.schemas.create');
             Route::post('/admin/schemas', [\App\Http\Controllers\Admin\SchemaController::class, 'store'])->name('admin.schemas.store');
             Route::get('/admin/schemas/{id}/edit', [\App\Http\Controllers\Admin\SchemaController::class, 'edit'])->name('admin.schemas.edit');
             Route::put('/admin/schemas/{id}', [\App\Http\Controllers\Admin\SchemaController::class, 'update'])->name('admin.schemas.update');
             Route::delete('/admin/schemas/{id}', [\App\Http\Controllers\Admin\SchemaController::class, 'destroy'])->name('admin.schemas.destroy');
+        });
 
+        Route::middleware(['super_admin_or_tenant_role:agency_admin,document_manager'])->group(function () {
             Route::get('/admin/documents', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'index'])->name('admin.documents.index');
             Route::get('/admin/documents/create', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'create'])->name('admin.documents.create');
             Route::post('/admin/documents', [\App\Http\Controllers\Admin\DocumentTemplateController::class, 'store'])->name('admin.documents.store');
@@ -79,8 +82,14 @@ Route::domain('{subdomain}.bayam.test')
         });
     });
 
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

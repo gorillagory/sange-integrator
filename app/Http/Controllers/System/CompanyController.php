@@ -33,6 +33,7 @@ class CompanyController extends Controller
                     'logo_path' => $company->logo_path,
                     'theme_color' => $company->theme_color,
                     'is_active' => $company->is_active,
+                    'vault_url' => $this->tenantDashboardUrl($company),
                     'main_group_company' => $company->mainGroupCompany
                         ? [
                             'id' => $company->mainGroupCompany->id,
@@ -75,5 +76,25 @@ class CompanyController extends Controller
         return redirect()
             ->route('system.companies.index')
             ->with('success', "Company [{$company->name}] provisioned under group [{$mainGroup->name}] successfully.");
+    }
+
+    private function tenantDashboardUrl(Company $company): string
+    {
+        $appUrl = rtrim((string) config('app.url', 'http://bayam.test:8000'), '/');
+        $parts = parse_url($appUrl);
+
+        $scheme = $parts['scheme'] ?? 'http';
+        $host = $parts['host'] ?? 'bayam.test';
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
+        if (str_starts_with($host, 'sys.')) {
+            $host = substr($host, 4);
+        }
+
+        if (str_starts_with($host, 'www.')) {
+            $host = substr($host, 4);
+        }
+
+        return "{$scheme}://{$company->subdomain}.{$host}{$port}/dashboard";
     }
 }

@@ -32,6 +32,8 @@ class UserController extends Controller
 
     public function index(Request $request): Response
     {
+        $this->ensureBaseRolesExist();
+
         $search = trim((string) $request->string('search'));
 
         $users = User::query()
@@ -74,6 +76,8 @@ class UserController extends Controller
     public function store(StoreUserRequest $request): RedirectResponse
     {
         DB::connection('control')->transaction(function () use ($request) {
+            $this->ensureBaseRolesExist();
+
             $user = User::create([
                 'name' => $request->validated('name'),
                 'email' => $request->validated('email'),
@@ -81,13 +85,13 @@ class UserController extends Controller
             ]);
 
             $this->syncGlobalRoles(
-                $user,
-                $request->validated('global_roles', [])
+                user: $user,
+                roleNames: $request->validated('global_roles', [])
             );
 
             $this->syncCompanyMembershipsAndTenantRoles(
-                $user,
-                $request->validated('memberships', [])
+                user: $user,
+                memberships: $request->validated('memberships', [])
             );
         });
 
@@ -99,6 +103,8 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
         DB::connection('control')->transaction(function () use ($request, $user) {
+            $this->ensureBaseRolesExist();
+
             $payload = [
                 'name' => $request->validated('name'),
                 'email' => $request->validated('email'),
@@ -111,13 +117,13 @@ class UserController extends Controller
             $user->update($payload);
 
             $this->syncGlobalRoles(
-                $user,
-                $request->validated('global_roles', [])
+                user: $user,
+                roleNames: $request->validated('global_roles', [])
             );
 
             $this->syncCompanyMembershipsAndTenantRoles(
-                $user,
-                $request->validated('memberships', [])
+                user: $user,
+                memberships: $request->validated('memberships', [])
             );
         });
 
@@ -128,18 +134,31 @@ class UserController extends Controller
 
     private function syncGlobalRoles(User $user, array $roleNames): void
     {
-        app(PermissionRegistrar::class)->setPermissionsTeamId(0);
+        $allowedRoleNames = array_values(array_intersect($roleNames, self::GLOBAL_ROLES));
+        $globalRoleIds = $this->getRoleIds(self::GLOBAL_ROLES);
 
-        $allowedRoleNames = array_values(array_intersect(
-            $roleNames,
-            self::GLOBAL_ROLES
-        ));
+        DB::connection('control')
+            ->table('model_has_roles')
+            ->where('model_type', $user->getMorphClass())
+            ->where('model_id', $user->id)
+            ->where('company_id', 0)
+            ->whereIn('role_id', $globalRoleIds)
+            ->delete();
 
-        foreach (self::GLOBAL_ROLES as $roleName) {
-            Role::findOrCreate($roleName, 'web');
+        $assignedRoleIds = $this->getRoleIds($allowedRoleNames);
+
+        foreach ($assignedRoleIds as $roleId) {
+            DB::connection('control')
+                ->table('model_has_roles')
+                ->insertOrIgnore([
+                    'role_id' => $roleId,
+                    'model_type' => $user->getMorphClass(),
+                    'model_id' => $user->id,
+                    'company_id' => 0,
+                ]);
         }
 
-        $user->syncRoles($allowedRoleNames);
+        $this->flushPermissionCache();
     }
 
     private function syncCompanyMembershipsAndTenantRoles(User $user, array $memberships): void
@@ -149,66 +168,62 @@ class UserController extends Controller
             ->map(function ($membership) {
                 return [
                     'company_id' => (int) $membership['company_id'],
-                    'tenant_roles' => array_values(array_intersect(
+                    'tenant_roles' => array_values(array_unique(array_intersect(
                         $membership['tenant_roles'] ?? [],
                         self::TENANT_ROLES
-                    )),
+                    ))),
                 ];
             })
             ->unique('company_id')
             ->values();
 
-        $companyIds = $normalizedMemberships->pluck('company_id')->all();
-
-        $syncPayload = [];
-        foreach ($companyIds as $companyId) {
-            $syncPayload[$companyId] = [
-                'role' => 'member',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
+        $syncPayload = $normalizedMemberships
+            ->mapWithKeys(fn ($membership) => [
+                $membership['company_id'] => [
+                    'role' => 'member',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            ])
+            ->all();
 
         $user->companies()->sync($syncPayload);
 
-        foreach (self::TENANT_ROLES as $roleName) {
-            Role::findOrCreate($roleName, 'web');
-        }
+        $tenantRoleIds = $this->getRoleIds(self::TENANT_ROLES);
 
-        $allCompanyIds = Company::query()->pluck('id')->all();
-
-        foreach ($allCompanyIds as $companyId) {
-            app(PermissionRegistrar::class)->setPermissionsTeamId($companyId);
-
-            foreach (self::TENANT_ROLES as $roleName) {
-                if ($user->hasRole($roleName)) {
-                    $user->removeRole($roleName);
-                }
-            }
-        }
+        DB::connection('control')
+            ->table('model_has_roles')
+            ->where('model_type', $user->getMorphClass())
+            ->where('model_id', $user->id)
+            ->where('company_id', '<>', 0)
+            ->whereIn('role_id', $tenantRoleIds)
+            ->delete();
 
         foreach ($normalizedMemberships as $membership) {
-            $companyId = $membership['company_id'];
-            $tenantRoles = $membership['tenant_roles'];
+            $companyId = (int) $membership['company_id'];
+            $roleIds = $this->getRoleIds($membership['tenant_roles']);
 
-            app(PermissionRegistrar::class)->setPermissionsTeamId($companyId);
-
-            foreach ($tenantRoles as $roleName) {
-                $user->assignRole($roleName);
+            foreach ($roleIds as $roleId) {
+                DB::connection('control')
+                    ->table('model_has_roles')
+                    ->insertOrIgnore([
+                        'role_id' => $roleId,
+                        'model_type' => $user->getMorphClass(),
+                        'model_id' => $user->id,
+                        'company_id' => $companyId,
+                    ]);
             }
         }
 
-        app(PermissionRegistrar::class)->setPermissionsTeamId(0);
+        $this->flushPermissionCache();
     }
 
     private function getAvailableGlobalRoles(): array
     {
-        foreach (self::GLOBAL_ROLES as $roleName) {
-            Role::findOrCreate($roleName, 'web');
-        }
+        $this->ensureBaseRolesExist();
 
         return Role::query()
-            ->whereNull('company_id')
+            ->where('company_id', 0)
             ->whereIn('name', self::GLOBAL_ROLES)
             ->orderBy('name')
             ->get(['id', 'name'])
@@ -222,12 +237,10 @@ class UserController extends Controller
 
     private function getAvailableTenantRoles(): array
     {
-        foreach (self::TENANT_ROLES as $roleName) {
-            Role::findOrCreate($roleName, 'web');
-        }
+        $this->ensureBaseRolesExist();
 
         return Role::query()
-            ->whereNull('company_id')
+            ->where('company_id', 0)
             ->whereIn('name', self::TENANT_ROLES)
             ->orderBy('name')
             ->get(['id', 'name'])
@@ -241,11 +254,15 @@ class UserController extends Controller
 
     private function getUserGlobalRoles(User $user): array
     {
-        app(PermissionRegistrar::class)->setPermissionsTeamId(0);
-
-        return $user->roles
-            ->whereIn('name', self::GLOBAL_ROLES)
-            ->pluck('name')
+        return DB::connection('control')
+            ->table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_type', $user->getMorphClass())
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.company_id', 0)
+            ->whereIn('roles.name', self::GLOBAL_ROLES)
+            ->orderBy('roles.name')
+            ->pluck('roles.name')
             ->values()
             ->all();
     }
@@ -265,22 +282,66 @@ class UserController extends Controller
             ->orderBy('companies.name')
             ->get();
 
-        return $memberships->map(function ($membership) use ($user) {
-            app(PermissionRegistrar::class)->setPermissionsTeamId($membership->company_id);
+        return $memberships
+            ->map(function ($membership) use ($user) {
+                return [
+                    'company_id' => (int) $membership->company_id,
+                    'company_name' => $membership->company_name,
+                    'subdomain' => $membership->subdomain,
+                    'industry' => $membership->industry,
+                    'tenant_roles' => $this->getUserTenantRolesForCompany(
+                        user: $user,
+                        companyId: (int) $membership->company_id
+                    ),
+                ];
+            })
+            ->values()
+            ->all();
+    }
 
-            $tenantRoles = $user->roles
-                ->whereIn('name', self::TENANT_ROLES)
-                ->pluck('name')
-                ->values()
-                ->all();
+    private function getUserTenantRolesForCompany(User $user, int $companyId): array
+    {
+        return DB::connection('control')
+            ->table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_type', $user->getMorphClass())
+            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.company_id', $companyId)
+            ->whereIn('roles.name', self::TENANT_ROLES)
+            ->orderBy('roles.name')
+            ->pluck('roles.name')
+            ->values()
+            ->all();
+    }
 
-            return [
-                'company_id' => $membership->company_id,
-                'company_name' => $membership->company_name,
-                'subdomain' => $membership->subdomain,
-                'industry' => $membership->industry,
-                'tenant_roles' => $tenantRoles,
-            ];
-        })->values()->all();
+    private function ensureBaseRolesExist(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(0);
+
+        foreach ([...self::GLOBAL_ROLES, ...self::TENANT_ROLES] as $roleName) {
+            Role::findOrCreate($roleName, 'web');
+        }
+
+        $this->flushPermissionCache();
+    }
+
+    private function getRoleIds(array $roleNames): array
+    {
+        if ($roleNames === []) {
+            return [];
+        }
+
+        return Role::query()
+            ->where('company_id', 0)
+            ->whereIn('name', $roleNames)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    private function flushPermissionCache(): void
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

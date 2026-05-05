@@ -1,60 +1,72 @@
+<!-- resources/js/Pages/Admin/Documents/Components/Canvas.vue -->
 <template>
-    <div class="flex-1 bg-gray-200/80 p-8 overflow-y-auto h-[800px] flex justify-center items-start overflow-x-auto relative">
+    <div class="flex h-full min-h-0 flex-col">
+        <div class="border-b border-slate-200 bg-white px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                        Live Preview
+                    </div>
+                    <div class="mt-1 text-sm font-semibold text-slate-900">
+                        Drag new blocks or reorder existing blocks
+                    </div>
+                </div>
 
-        <div :style="{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease' }" class="pb-32 w-full flex justify-center">
-
-            <div
-                class="transition-all duration-300 relative flex flex-col overflow-hidden"
-                :class="[pageDimensions, isPreview ? 'shadow-sm' : 'shadow-2xl']"
-                :style="{ padding: page.margins, backgroundColor: page.backgroundColor || '#ffffff' }"
-                @click.self="$emit('selectPage')"
-            >
-                <div v-if="activeNodeId === 'page' && !isPreview" class="absolute inset-0 border-4 border-[var(--brand-500)] pointer-events-none z-50"></div>
-
-                <div
-                    v-if="page.watermarkText"
-                    class="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
-                    :style="{ opacity: page.watermarkOpacity || 0.1 }"
-                >
-                    <span
-                        class="font-black uppercase tracking-widest transform -rotate-45 whitespace-nowrap"
-                        :style="{ fontSize: '8rem', color: page.watermarkColor || '#e5e7eb' }"
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        class="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        @click="$emit('zoom-out')"
                     >
-                        {{ page.watermarkText }}
-                    </span>
+                        −
+                    </button>
+
+                    <div class="min-w-[60px] text-center text-xs font-semibold text-slate-600">
+                        {{ Math.round(zoomLevel * 100) }}%
+                    </div>
+
+                    <button
+                        type="button"
+                        class="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        @click="$emit('zoom-in')"
+                    >
+                        +
+                    </button>
                 </div>
+            </div>
+        </div>
 
-                <div class="flex-1 flex flex-col relative z-10 w-full h-full gap-2">
+        <div class="min-h-0 flex-1 overflow-auto bg-slate-100 p-6 lg:p-8">
+            <div class="flex min-h-full items-start justify-center">
+                <div
+                    class="origin-top rounded-2xl border border-slate-300 bg-white shadow-xl"
+                    :style="pageShellStyle"
+                    @click.stop="$emit('select-page')"
+                >
+                    <CanvasZone
+                        label="Header"
+                        zone="header"
+                        :nodes="layoutVector?.header || []"
+                        :is-preview-mode="isPreviewMode"
+                    />
 
-                    <div class="relative w-full min-h-[60px] group/zone">
-                        <div v-if="!isPreview && header.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span class="text-[10px] font-bold text-blue-400/50 uppercase tracking-widest">Header Zone (Repeats Every Page)</span>
-                        </div>
-                        <VueDraggableNext :list="header" group="blocks" :disabled="isPreview" class="w-full min-h-[60px]" :class="!isPreview ? 'border-2 border-dashed border-blue-200 hover:bg-blue-50/30 transition' : ''" @change="$emit('update')">
-                            <CanvasNode v-for="node in header" :key="node.id" :node="node" />
-                        </VueDraggableNext>
-                    </div>
+                    <CanvasZone
+                        label="Body"
+                        zone="body"
+                        :nodes="layoutVector?.body || []"
+                        :is-preview-mode="isPreviewMode"
+                        with-top-border
+                        empty-label="Drag blocks here to begin"
+                    />
 
-                    <div class="relative w-full flex-1 group/zone">
-                        <div v-if="!isPreview && body.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span class="text-[10px] font-bold text-emerald-400/50 uppercase tracking-widest">Body Zone (Flows downwards)</span>
-                        </div>
-                        <VueDraggableNext :list="body" group="blocks" :disabled="isPreview" class="w-full h-full min-h-[200px]" :class="!isPreview ? 'border-2 border-dashed border-emerald-200 hover:bg-emerald-50/30 transition' : ''" @change="$emit('update')">
-                            <CanvasNode v-for="node in body" :key="node.id" :node="node" />
-                        </VueDraggableNext>
-                    </div>
-
-                    <div class="relative w-full min-h-[60px] group/zone mt-auto">
-                        <div v-if="!isPreview && footer.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span class="text-[10px] font-bold text-purple-400/50 uppercase tracking-widest">Footer Zone (Repeats Every Page)</span>
-                        </div>
-                        <VueDraggableNext :list="footer" group="blocks" :disabled="isPreview" class="w-full min-h-[60px]" :class="!isPreview ? 'border-2 border-dashed border-purple-200 hover:bg-purple-50/30 transition' : ''" @change="$emit('update')">
-                            <CanvasNode v-for="node in footer" :key="node.id" :node="node" />
-                        </VueDraggableNext>
-                    </div>
-
+                    <CanvasZone
+                        label="Footer"
+                        zone="footer"
+                        :nodes="layoutVector?.footer || []"
+                        :is-preview-mode="isPreviewMode"
+                        with-top-border
+                    />
                 </div>
-
             </div>
         </div>
     </div>
@@ -62,36 +74,47 @@
 
 <script setup>
 import { computed } from 'vue';
-import { VueDraggableNext } from 'vue-draggable-next';
-import CanvasNode from './CanvasNode.vue';
+import CanvasZone from './canvas/CanvasZone.vue';
 
 const props = defineProps({
-    page: { type: Object, required: true },
-    // NEW: Accepts the 3 specific zone arrays
-    header: { type: Array, required: true },
-    body: { type: Array, required: true },
-    footer: { type: Array, required: true },
-    activeNodeId: { type: [String, Number], default: null },
-    zoom: { type: Number, default: 1 },
-    isPreview: { type: Boolean, default: false }
+    layoutVector: {
+        type: Object,
+        required: true,
+    },
+    zoomLevel: {
+        type: Number,
+        default: 1,
+    },
+    isPreviewMode: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-defineEmits(['update', 'selectPage']);
+defineEmits(['select-page', 'zoom-in', 'zoom-out']);
 
-// Dynamically calculates the Tailwind classes for proper mm printing dimensions
-const pageDimensions = computed(() => {
-    const s = props.page.size || 'A4';
-    const o = props.page.orientation || 'portrait';
+const pageShellStyle = computed(() => {
+    const page = props.layoutVector?.page ?? {};
+    const portrait = page.orientation !== 'landscape';
 
-    if (s === 'A4' && o === 'portrait') return 'w-[210mm] min-h-[297mm]';
-    if (s === 'A4' && o === 'landscape') return 'w-[297mm] min-h-[210mm]';
+    const width = page.size === 'Letter'
+        ? (portrait ? 816 : 1056)
+        : page.size === 'Legal'
+            ? (portrait ? 816 : 1344)
+            : (portrait ? 794 : 1123);
 
-    if (s === 'A5' && o === 'portrait') return 'w-[148mm] min-h-[210mm]';
-    if (s === 'A5' && o === 'landscape') return 'w-[210mm] min-h-[148mm]';
+    const height = page.size === 'Letter'
+        ? (portrait ? 1056 : 816)
+        : page.size === 'Legal'
+            ? (portrait ? 1344 : 816)
+            : (portrait ? 1123 : 794);
 
-    if (s === 'Letter' && o === 'portrait') return 'w-[216mm] min-h-[279mm]';
-    if (s === 'Letter' && o === 'landscape') return 'w-[279mm] min-h-[216mm]';
-
-    return 'w-[210mm] min-h-[297mm]';
+    return {
+        width: `${width}px`,
+        minHeight: `${height}px`,
+        backgroundColor: page.backgroundColor || '#ffffff',
+        transform: `scale(${props.zoomLevel})`,
+        transformOrigin: 'top center',
+    };
 });
 </script>

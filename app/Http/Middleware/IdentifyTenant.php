@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Company;
+use App\Services\AuthRedirectService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +19,8 @@ class IdentifyTenant
     {
         $subdomain = $request->route('subdomain');
 
-        $company = DB::connection('control')->table('companies')
+        /** @var \App\Models\Company|null $company */
+        $company = Company::query()
             ->where('subdomain', $subdomain)
             ->where('is_active', true)
             ->first();
@@ -26,15 +29,30 @@ class IdentifyTenant
             abort(404, 'Company environment not found or inactive.');
         }
 
+        /** @var \App\Models\User|null $user */
         $user = Auth::user();
 
-        $hasAccess = DB::connection('control')->table('company_user')
+        if (! $user) {
+            abort(401);
+        }
+
+        app(PermissionRegistrar::class)->setPermissionsTeamId(0);
+
+        $isSuperAdmin = $user->isSuperAdmin();
+
+        $hasMembership = DB::connection('control')
+            ->table('company_user')
             ->where('user_id', $user->id)
             ->where('company_id', $company->id)
             ->exists();
 
-        if (! $hasAccess) {
-            return redirect('http://sys.bayam.test:8000/dashboard')
+        if (! $isSuperAdmin && ! $hasMembership) {
+            /** @var \App\Services\AuthRedirectService $redirectService */
+            $redirectService = app(AuthRedirectService::class);
+
+            $targetUrl = $redirectService->redirectForDeniedTenantAccess($user, $company);
+
+            return redirect($targetUrl)
                 ->with('error', "You do not have security clearance for {$company->name}.");
         }
 

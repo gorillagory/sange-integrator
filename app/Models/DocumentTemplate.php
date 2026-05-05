@@ -2,21 +2,27 @@
 
 namespace App\Models;
 
+use App\Services\DocumentTemplateLayoutService;
 use Illuminate\Database\Eloquent\Model;
 
 class DocumentTemplate extends Model
 {
-    // No $connection override needed; this naturally binds to the active Tenant DB
-
     protected $fillable = [
         'name',
         'code',
         'document_type',
-        'layout_vector'
+        'layout_vector',
     ];
 
-    // This ensures Laravel automatically converts the JSON from Vue into a DB array
     protected $casts = [
-        'layout_vector' => 'array'
+        'layout_vector' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (DocumentTemplate $template) {
+            $template->layout_vector = app(DocumentTemplateLayoutService::class)
+                ->normalize($template->layout_vector);
+        });
+    }
 }
