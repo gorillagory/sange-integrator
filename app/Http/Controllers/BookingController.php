@@ -1,8 +1,13 @@
 <?php
 
+// app/Http/Controllers/BookingController.php
+
 namespace App\Http\Controllers;
 
+use App\Actions\Travel\CreateBookingAction;
 use App\Models\Booking;
+use App\Models\Client;
+use App\Models\Contract;
 use App\Models\ServiceSchema;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,12 +16,16 @@ class BookingController extends Controller
 {
     public function index()
     {
-        $bookings = Booking::with('client')
+        $company = view()->shared('currentCompany');
+
+        $bookings = Booking::query()
+            ->with('client')
+            ->where('company_id', $company->id)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return Inertia::render('Bookings/Index', [
-            'bookings' => $bookings
+            'bookings' => $bookings,
         ]);
     }
 
@@ -24,121 +33,85 @@ class BookingController extends Controller
     {
         $company = view()->shared('currentCompany');
 
-        $schemas = \App\Models\ServiceSchema::where('industry', $company->industry)
+        $schemas = ServiceSchema::query()
+            ->where('industry', $company->industry)
             ->orderBy('display_name')
             ->get();
 
-        $clients = \App\Models\Client::with('contracts')->orderBy('name')->get();
+        $clients = Client::query()
+            ->with('contracts')
+            ->orderBy('name')
+            ->get();
 
         return Inertia::render('Bookings/Create', [
             'schemas' => $schemas,
-            'clients' => $clients
+            'clients' => $clients,
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, CreateBookingAction $createBookingAction)
     {
-        // 🛡️ Explicitly define rules for the new Agency Pricing Flow
         $validated = $request->validate([
             'client_id' => 'required|exists:control.clients,id',
             'contract_no' => 'required|string',
             'services' => 'required|array|min:1',
             'services.*.service_type' => 'required|string',
-            'services.*.service_details' => 'nullable|array', // Allows nested dynamic schema data
+            'services.*.service_details' => 'nullable|array',
             'services.*.qty' => 'required|integer|min:1',
-            'services.*.unit_fare' => 'required|numeric', // Supplier Cost
+            'services.*.unit_fare' => 'required|numeric',
             'services.*.tax_type' => 'required|string|in:%,RM',
             'services.*.tax_value' => 'required|numeric',
-            'services.*.client_price' => 'required|numeric', // Total Charged to Client (per unit)
+            'services.*.client_price' => 'required|numeric',
+            'passengers' => 'nullable|array',
+            'passengers.*.full_name' => 'nullable|string|max:255',
+            'passengers.*.passenger_type' => 'nullable|string|max:50',
+            'passengers.*.passport_no' => 'nullable|string|max:100',
+            'passengers.*.nationality' => 'nullable|string|max:100',
+            'passengers.*.date_of_birth' => 'nullable|date',
+            'passenger_details' => 'nullable|array',
         ]);
 
-        $refNo = 'BKG-' . date('Ym') . '-' . strtoupper(\Illuminate\Support\Str::random(5));
         $company = view()->shared('currentCompany');
-        $schemas = \App\Models\ServiceSchema::where('industry', $company->industry)->get()->keyBy('service_type');
 
-        $totalAmount = 0;
-        $cartPayload = [];
+        $booking = $createBookingAction->execute($validated, $company);
 
-        foreach ($validated['services'] as $item) {
-            $qty = intval($item['qty'] ?? 1);
-            $base = floatval($item['unit_fare'] ?? 0);
-
-            // Tax Engine
-            $taxType = $item['tax_type'] ?? 'RM';
-            $taxAmount = $taxType === '%'
-                ? $base * (floatval($item['tax_value'] ?? 0) / 100)
-                : floatval($item['tax_value'] ?? 0);
-
-            // 🧮 Auto-Calculate Profit Margin
-            $clientPrice = floatval($item['client_price'] ?? 0);
-            $markupAmount = $clientPrice - $base - $taxAmount; // Profit = Client Price - Cost - Tax
-
-            $lineTotal = $clientPrice * $qty;
-            $totalAmount += $lineTotal;
-
-            // 📎 Process Dynamic Details & Files
-            $processedDetails = [];
-            if (!empty($item['service_details'])) {
-                foreach ($item['service_details'] as $key => $value) {
-                    if ($value instanceof \Illuminate\Http\UploadedFile) {
-                        $path = $value->store('booking-attachments', 'public');
-                        $processedDetails[$key] = '/storage/' . $path;
-                    } else {
-                        $processedDetails[$key] = $value;
-                    }
-                }
-            }
-
-            $cartPayload[] = [
-                'service_type' => $item['service_type'],
-                'service_name' => $schemas[$item['service_type']]->display_name ?? 'Service',
-                'details' => $processedDetails,
-                'base_fare' => $base,
-                'tax_type' => $taxType,
-                'tax_value' => floatval($item['tax_value'] ?? 0),
-                'tax' => $taxAmount,
-                'markup_type' => 'RM', // Hardcoded since we derive it from final client price
-                'markup_value' => $markupAmount,
-                'markup' => $markupAmount,
-                'price' => $clientPrice,
-                'qty' => $qty
-            ];
-        }
-
-        $booking = \App\Models\Booking::create([
-            'reference_no' => $refNo,
-            'client_id' => $validated['client_id'],
-            'contract_no' => $validated['contract_no'],
-            'cart_payload' => $cartPayload,
-            'total_amount' => $totalAmount,
-            'status' => 'Draft'
-        ]);
-
-        $bookingId = $booking->id ?? \App\Models\Booking::where('reference_no', $refNo)->value('id');
-
-        return redirect()->route('bookings.show', ['id' => $bookingId])
+        return redirect()
+            ->route('bookings.show', ['subdomain' => $company->subdomain, 'id' => $booking->id])
             ->with('success', 'Master Booking constructed. Ready for final assignment.');
     }
 
     public function show($subdomain, $id)
     {
-        $booking = \App\Models\Booking::with('client')->findOrFail($id);
-        $clients = \App\Models\Client::with('contracts')->orderBy('name')->get();
+        $company = view()->shared('currentCompany');
 
-        return \Inertia\Inertia::render('Bookings/Show', [
+        $booking = Booking::query()
+            ->with(['client', 'services.schema', 'passengers'])
+            ->where('company_id', $company->id)
+            ->findOrFail($id);
+
+        $clients = Client::query()
+            ->with('contracts')
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('Bookings/Show', [
             'booking' => $booking,
-            'clients' => $clients
+            'clients' => $clients,
         ]);
     }
 
     public function updateInvoice(Request $request, $subdomain, $id)
     {
-        $booking = \App\Models\Booking::findOrFail($id);
+        $company = view()->shared('currentCompany');
+
+        $booking = Booking::query()
+            ->where('company_id', $company->id)
+            ->findOrFail($id);
 
         $validated = $request->validate([
             'client_id' => 'required|exists:control.clients,id',
             'contract_no' => 'required|string',
-            'passenger_details' => 'nullable|array'
+            'passenger_details' => 'nullable|array',
         ]);
 
         $invoiceNo = $booking->invoice_no ?? 'INV-' . date('Ym') . '-' . str_pad($booking->id, 4, '0', STR_PAD_LEFT);
@@ -148,7 +121,7 @@ class BookingController extends Controller
             'contract_no' => $validated['contract_no'],
             'passenger_details' => $validated['passenger_details'] ?? [],
             'invoice_no' => $invoiceNo,
-            'status' => 'Invoiced'
+            'status' => 'Invoiced',
         ]);
 
         return back()->with('success', 'Invoice locked. Ready for PDF Generation.');
@@ -156,22 +129,28 @@ class BookingController extends Controller
 
     public function downloadInvoice($subdomain, $id)
     {
-        $booking = \App\Models\Booking::findOrFail($id);
+        $company = view()->shared('currentCompany');
 
-        if (!$booking->invoice_no || !$booking->client_id) {
+        $booking = Booking::query()
+            ->with(['client', 'services.schema', 'passengers'])
+            ->where('company_id', $company->id)
+            ->findOrFail($id);
+
+        if (! $booking->invoice_no || ! $booking->client_id) {
             return back()->withErrors(['error' => 'Invoice parameters missing. Please lock the invoice first.']);
         }
 
-        $client = \App\Models\Client::find($booking->client_id);
-        $contract = \App\Models\Contract::where('contract_no', $booking->contract_no)->first();
+        $client = Client::query()->find($booking->client_id);
+        $contract = Contract::query()->where('contract_no', $booking->contract_no)->first();
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', [
             'booking' => $booking,
             'client' => $client,
-            'contract' => $contract
+            'contract' => $contract,
         ]);
 
         $fileName = "{$client->name} - {$booking->invoice_no}.pdf";
+
         return $pdf->download($fileName);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+// app/Models/Company.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -48,6 +50,25 @@ class Company extends Model
         return $this->belongsToMany(User::class, 'company_user', 'company_id', 'user_id')
             ->withPivot(['role'])
             ->withTimestamps();
+    }
+
+    public function modules(): BelongsToMany
+    {
+        return $this->belongsToMany(Module::class, 'company_modules', 'company_id', 'module_id')
+            ->withPivot(['enabled_at', 'settings_json'])
+            ->withTimestamps();
+    }
+
+    public function enabledModules(): BelongsToMany
+    {
+        return $this->modules()->where('modules.is_active', true);
+    }
+
+    public function hasModule(string $key): bool
+    {
+        return $this->enabledModules()
+            ->where('modules.key', $key)
+            ->exists();
     }
 
     public function scopeActive($query)

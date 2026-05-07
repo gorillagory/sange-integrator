@@ -1,6 +1,9 @@
 <?php
 
+// bootstrap/app.php
+
 use App\Http\Middleware\AllowSuperAdminOrTenantRole;
+use App\Http\Middleware\EnsureCompanyModuleEnabled;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'super_admin_or_tenant_role' => AllowSuperAdminOrTenantRole::class,
+            'company_module' => EnsureCompanyModuleEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -1,75 +1,152 @@
+<!-- resources/js/Pages/Bookings/Components/ServiceRow.vue -->
 <template>
-    <div class="border rounded-2xl transition-all duration-300 shadow-sm" :class="isEditing ? 'bg-white border-[var(--brand-200)] ring-4 ring-blue-50/50' : 'bg-gray-50/50 border-gray-200 hover:border-gray-300 hover:shadow-md'">
-
-        <div v-if="isEditing" class="p-6 relative">
-            <button @click.prevent="$emit('remove')" class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition" title="Remove Service">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+    <div
+        class="rounded-2xl border shadow-sm transition-all duration-300"
+        :class="isEditing ? 'border-[var(--brand-200)] bg-white ring-4 ring-blue-50/50' : 'border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:shadow-md'"
+    >
+        <div
+            v-if="isEditing"
+            class="relative p-6"
+        >
+            <button
+                type="button"
+                class="absolute right-6 top-6 text-gray-400 transition hover:text-red-500"
+                title="Remove Service"
+                @click.prevent="$emit('remove')"
+            >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
             </button>
-            <h4 class="font-bold text-[var(--brand-700)] uppercase text-sm mb-6 pb-3 border-b border-gray-100 mr-8 flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+
+            <h4 class="mb-6 mr-8 flex items-center gap-2 border-b border-gray-100 pb-3 text-sm font-bold uppercase text-[var(--brand-700)]">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
                 {{ schemaName }}
             </h4>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-                <div v-for="field in fields" :key="field.key" :class="field.grid_span === 2 || field.ui_component === 'textarea' ? 'md:col-span-2' : 'md:col-span-1'">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 flex justify-between items-center">
-                        <span>{{ field.label }} <span v-if="field.rules.includes('required')" class="text-red-500">*</span></span>
-                        <span v-if="field.is_array" class="text-[9px] text-[var(--brand-500)] bg-[var(--brand-50)] px-1.5 py-0.5 rounded border border-[var(--brand-200)]">Repeatable List</span>
+            <div class="mb-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div
+                    v-for="field in fields"
+                    :key="field.key"
+                    :class="field.grid_span === 2 || field.ui_component === 'textarea' ? 'md:col-span-2' : 'md:col-span-1'"
+                >
+                    <label class="mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase text-gray-500">
+                        <span>
+                            {{ field.label }}
+                            <span
+                                v-if="field.rules.includes('required')"
+                                class="text-red-500"
+                            >
+                                *
+                            </span>
+                        </span>
+
+                        <span
+                            v-if="field.is_array"
+                            class="rounded border border-[var(--brand-200)] bg-[var(--brand-50)] px-1.5 py-0.5 text-[9px] text-[var(--brand-500)]"
+                        >
+                            Repeatable List
+                        </span>
                     </label>
 
                     <template v-if="!field.is_array">
+                        <textarea
+                            v-if="field.ui_component === 'textarea'"
+                            v-model="item.service_details[field.key]"
+                            rows="3"
+                            :required="field.rules.includes('required')"
+                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm transition-colors focus:border-[var(--brand-500)] focus:bg-white focus:ring-[var(--brand-500)]"
+                            :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
+                            :placeholder="field.placeholder || 'Enter details...'"
+                        />
 
-                        <textarea v-if="field.ui_component === 'textarea'"
-                                  v-model="item.service_details[field.key]"
-                                  rows="3"
-                                  :required="field.rules.includes('required')"
-                                  class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:bg-white focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)] transition-colors"
-                                  :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
-                                  :placeholder="field.placeholder || 'Enter details...'"></textarea>
+                        <select
+                            v-else-if="field.ui_component === 'select' && field.options.length"
+                            v-model="item.service_details[field.key]"
+                            :required="field.rules.includes('required')"
+                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm transition-colors focus:border-[var(--brand-500)] focus:bg-white focus:ring-[var(--brand-500)]"
+                        >
+                            <option :value="''" disabled>
+                                Select {{ field.label.toLowerCase() }}...
+                            </option>
+                            <option
+                                v-for="option in field.options"
+                                :key="normalizeOptionValue(option)"
+                                :value="normalizeOptionValue(option)"
+                            >
+                                {{ normalizeOptionLabel(option) }}
+                            </option>
+                        </select>
 
-                        <input v-else-if="field.ui_component === 'file'"
-                               type="file"
-                               :required="field.rules.includes('required')"
-                               @change="e => item.service_details[field.key] = e.target.files[0]"
-                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-[var(--brand-700)] hover:file:bg-[var(--brand-100)] border border-gray-200 rounded-lg bg-gray-50 cursor-pointer transition-colors">
+                        <input
+                            v-else-if="field.ui_component === 'file'"
+                            type="file"
+                            :required="field.rules.includes('required')"
+                            class="block w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-500 transition-colors file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2.5 file:text-xs file:font-bold file:text-[var(--brand-700)] hover:file:bg-[var(--brand-100)]"
+                            @change="onFileChange($event, field.key)"
+                        >
 
-                        <input v-else
-                               :type="getHtmlInputType(field.type, field.ui_component)"
-                               v-model="item.service_details[field.key]"
-                               :required="field.rules.includes('required')"
-                               class="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:bg-white focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)] transition-colors"
-                               :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
-                               :placeholder="field.placeholder || `Enter ${field.label}...`">
+                        <input
+                            v-else
+                            v-model="item.service_details[field.key]"
+                            :type="getHtmlInputType(field.type, field.ui_component)"
+                            :required="field.rules.includes('required')"
+                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm transition-colors focus:border-[var(--brand-500)] focus:bg-white focus:ring-[var(--brand-500)]"
+                            :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
+                            :placeholder="field.placeholder || `Enter ${field.label}...`"
+                        >
                     </template>
 
                     <template v-else>
-                        <div class="space-y-2 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-                            <div v-for="(line, lineIndex) in item.service_details[field.key]" :key="lineIndex" class="flex gap-2 relative group/line">
+                        <div class="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                            <div
+                                v-for="(line, lineIndex) in item.service_details[field.key]"
+                                :key="lineIndex"
+                                class="relative flex gap-2"
+                            >
+                                <textarea
+                                    v-if="field.ui_component === 'textarea'"
+                                    v-model="item.service_details[field.key][lineIndex]"
+                                    rows="2"
+                                    :required="field.rules.includes('required') && lineIndex === 0"
+                                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]"
+                                    :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
+                                    :placeholder="`${field.placeholder || field.label} ${lineIndex + 1}`"
+                                />
 
-                                <textarea v-if="field.ui_component === 'textarea'"
-                                          v-model="item.service_details[field.key][lineIndex]"
-                                          rows="2"
-                                          :required="field.rules.includes('required') && lineIndex === 0"
-                                          class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)] shadow-sm"
-                                          :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
-                                          :placeholder="`${field.placeholder || field.label} ${lineIndex + 1}`"></textarea>
+                                <input
+                                    v-else
+                                    v-model="item.service_details[field.key][lineIndex]"
+                                    :type="getHtmlInputType(field.type, field.ui_component)"
+                                    :required="field.rules.includes('required') && lineIndex === 0"
+                                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]"
+                                    :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
+                                    :placeholder="`${field.placeholder || field.label} ${lineIndex + 1}`"
+                                >
 
-                                <input v-else
-                                       :type="getHtmlInputType(field.type, field.ui_component)"
-                                       v-model="item.service_details[field.key][lineIndex]"
-                                       :required="field.rules.includes('required') && lineIndex === 0"
-                                       class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)] shadow-sm"
-                                       :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
-                                       :placeholder="`${field.placeholder || field.label} ${lineIndex + 1}`">
-
-                                <button v-if="item.service_details[field.key].length > 1"
-                                        @click.prevent="item.service_details[field.key].splice(lineIndex, 1)"
-                                        class="shrink-0 w-10 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition" title="Remove line">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <button
+                                    v-if="item.service_details[field.key].length > 1"
+                                    type="button"
+                                    class="flex w-10 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                                    title="Remove line"
+                                    @click.prevent="item.service_details[field.key].splice(lineIndex, 1)"
+                                >
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
                                 </button>
                             </div>
-                            <button @click.prevent="item.service_details[field.key].push('')" class="text-xs font-bold text-[var(--brand-600)] hover:text-[var(--brand-800)] flex items-center gap-1 mt-2 transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+
+                            <button
+                                type="button"
+                                class="mt-2 flex items-center gap-1 text-xs font-bold text-[var(--brand-600)] transition-colors hover:text-[var(--brand-800)]"
+                                @click.prevent="item.service_details[field.key].push('')"
+                            >
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
                                 Add another {{ field.label }}
                             </button>
                         </div>
@@ -77,163 +154,304 @@
                 </div>
             </div>
 
-            <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-5 items-start mb-6">
+            <div class="mb-6 grid grid-cols-1 items-start gap-5 rounded-xl border border-gray-200 bg-gray-50 p-5 md:grid-cols-12">
                 <div class="md:col-span-2">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">QTY</label>
-                    <input v-model.number="item.qty" type="number" min="1" class="w-full px-2 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-bold focus:border-[var(--brand-500)] text-center">
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase text-gray-500">
+                        Qty
+                    </label>
+                    <input
+                        v-model.number="item.qty"
+                        type="number"
+                        min="1"
+                        class="w-full rounded-lg border border-gray-300 bg-white px-2 py-2.5 text-center text-sm font-bold focus:border-[var(--brand-500)]"
+                    >
                 </div>
 
                 <div class="md:col-span-3">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Supplier Cost (Unit)</label>
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase text-gray-500">
+                        Supplier Cost (Unit)
+                    </label>
                     <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-bold">RM</span>
-                        <input v-model.number="item.unit_fare" type="number" step="0.01" class="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-bold focus:border-[var(--brand-500)]" placeholder="0.00">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">RM</span>
+                        <input
+                            v-model.number="item.unit_fare"
+                            type="number"
+                            step="0.01"
+                            class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-bold focus:border-[var(--brand-500)]"
+                            placeholder="0.00"
+                        >
                     </div>
                 </div>
 
                 <div class="md:col-span-3">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Tax (Unit)</label>
-                    <div class="flex relative">
-                        <select v-model="item.tax_type" class="w-20 bg-gray-100 border border-gray-300 rounded-l-lg text-xs font-bold focus:z-10 focus:border-[var(--brand-500)]">
+                    <label class="mb-1.5 block text-[10px] font-bold uppercase text-gray-500">
+                        Tax (Unit)
+                    </label>
+                    <div class="relative flex">
+                        <select
+                            v-model="item.tax_type"
+                            class="w-20 rounded-l-lg border border-gray-300 bg-gray-100 text-xs font-bold focus:z-10 focus:border-[var(--brand-500)]"
+                        >
                             <option value="RM">RM</option>
                             <option value="%">%</option>
                         </select>
-                        <input v-model.number="item.tax_value" type="number" step="0.01" class="w-full border border-l-0 border-gray-300 bg-white rounded-r-lg px-3 py-2.5 text-sm focus:border-[var(--brand-500)]" placeholder="0.00">
+                        <input
+                            v-model.number="item.tax_value"
+                            type="number"
+                            step="0.01"
+                            class="w-full rounded-r-lg border border-l-0 border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-[var(--brand-500)]"
+                            placeholder="0.00"
+                        >
                     </div>
-                    <div class="text-[10px] text-gray-500 font-medium mt-1.5 ml-1">Est: RM {{ formatNumber(calculatedTax) }}</div>
+                    <div class="ml-1 mt-1.5 text-[10px] font-medium text-gray-500">
+                        Est: RM {{ formatNumber(calculatedTax) }}
+                    </div>
                 </div>
 
                 <div class="md:col-span-4">
-                    <label class="block text-[10px] font-black text-[var(--brand-600)] uppercase mb-1.5">Total Charged to Client (Unit)</label>
+                    <label class="mb-1.5 block text-[10px] font-black uppercase text-[var(--brand-600)]">
+                        Total Charged to Client (Unit)
+                    </label>
                     <div class="relative shadow-sm">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--brand-700)] text-sm font-black">RM</span>
-                        <input v-model.number="item.client_price" type="number" step="0.01" class="w-full pl-10 border border-[var(--brand-300)] bg-blue-50 text-[var(--brand-800)] font-black rounded-lg py-2.5 text-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]" placeholder="0.00">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-[var(--brand-700)]">RM</span>
+                        <input
+                            v-model.number="item.client_price"
+                            type="number"
+                            step="0.01"
+                            class="w-full rounded-lg border border-[var(--brand-300)] bg-blue-50 py-2.5 pl-10 text-sm font-black text-[var(--brand-800)] focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]"
+                            placeholder="0.00"
+                        >
                     </div>
-                    <div class="text-[10px] text-[var(--brand-500)] font-bold mt-1.5 ml-1">Est. Profit: RM {{ formatNumber(calculatedProfit) }}</div>
                 </div>
             </div>
 
-            <div class="flex justify-end border-t border-gray-100 pt-5">
-                <button @click.prevent="isEditing = false" class="px-6 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-bold rounded-xl transition shadow-lg flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    Confirm & Minimize Row
-                </button>
+            <div class="grid grid-cols-1 gap-4 rounded-xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 p-4 text-white md:grid-cols-4">
+                <div>
+                    <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Base Cost
+                    </div>
+                    <div class="mt-1 text-lg font-black">
+                        RM {{ formatNumber(totalBaseCost) }}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Tax
+                    </div>
+                    <div class="mt-1 text-lg font-black text-amber-300">
+                        RM {{ formatNumber(totalTax) }}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Margin
+                    </div>
+                    <div
+                        class="mt-1 text-lg font-black"
+                        :class="totalMargin < 0 ? 'text-rose-300' : 'text-emerald-300'"
+                    >
+                        RM {{ formatNumber(totalMargin) }}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                        Line Total
+                    </div>
+                    <div class="mt-1 text-xl font-black text-white">
+                        RM {{ formatNumber(lineTotal) }}
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div v-else class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer" @click="isEditing = true">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <div
+            v-else
+            class="flex items-center justify-between p-5"
+        >
+            <div>
+                <div class="text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {{ schemaName }}
                 </div>
-                <div>
-                    <h4 class="font-bold text-gray-900 text-sm">{{ schemaName }}</h4>
-                    <p class="text-xs text-gray-500 mt-0.5 truncate max-w-md">{{ summarySnippet || 'No operational details provided.' }}</p>
+                <div class="mt-1 text-sm text-gray-600">
+                    {{ fields.length }} field{{ fields.length === 1 ? '' : 's' }} configured
                 </div>
             </div>
 
-            <div class="flex items-center gap-6 sm:ml-auto border-t sm:border-t-0 border-gray-200 pt-3 sm:pt-0">
-                <div class="text-right">
-                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Line Total (Qty: {{ item.qty || 1 }})</div>
-                    <div class="font-bold text-gray-900">RM {{ formatNumber(lineTotal) }}</div>
+            <div class="text-right">
+                <div class="text-xs font-semibold uppercase text-gray-400">
+                    Line Total
                 </div>
-                <button @click.stop="isEditing = true" class="px-4 py-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-2">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    Edit
-                </button>
-                <button @click.stop="$emit('remove')" class="text-gray-400 hover:text-red-500 transition" title="Remove">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
+                <div class="mt-1 text-lg font-black text-gray-900">
+                    RM {{ formatNumber(lineTotal) }}
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
-    item: Object,
-    schemas: Array
+    item: {
+        type: Object,
+        required: true,
+    },
+    schema: {
+        type: Object,
+        default: null,
+    },
 });
+
 defineEmits(['remove']);
 
 const isEditing = ref(true);
 
-// 🟢 THE FIX: Checks BOTH `type` and `ui_component` to find the correct HTML tag!
-const getHtmlInputType = (type, uiComponent) => {
-    const effectiveType = type || uiComponent || 'text';
-    if (effectiveType === 'datetime') return 'datetime-local';
-    if (['date', 'time', 'number', 'email', 'tel', 'color', 'password'].includes(effectiveType)) return effectiveType;
-    return 'text'; // Fallback for typeahead, string, text_input
-};
-
-const formatNumber = (value) => {
-    return (parseFloat(value) || 0).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-};
-
-const schemaName = computed(() => {
-    return props.schemas.find(s => s.service_type === props.item.service_type)?.display_name || props.item.service_type;
-});
+const schemaName = computed(() => props.schema?.display_name || humanize(props.item.service_type));
 
 const fields = computed(() => {
-    const schema = props.schemas.find(s => s.service_type === props.item.service_type);
-    if (!schema) return [];
+    const payload = typeof props.schema?.schema_payload === 'string'
+        ? safelyParseJson(props.schema.schema_payload)
+        : (props.schema?.schema_payload || {});
 
-    let payload = schema.schema_payload;
-    if (typeof payload === 'string') { try { payload = JSON.parse(payload); } catch (e) { payload = []; } }
+    const source = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.fields)
+            ? payload.fields
+            : [];
 
-    let fieldsArray = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.fields) ? payload.fields : []);
-
-    return fieldsArray.map(f => {
-        if (typeof f === 'string') {
-            return { key: f, label: f.replace(/_/g, ' '), type: 'string', ui_component: 'text_input', grid_span: 1, rules: [], is_array: false, text_transform: 'none' };
+    return source.map((field, index) => {
+        if (typeof field === 'string') {
+            return {
+                key: field,
+                label: humanize(field),
+                type: 'string',
+                ui_component: 'input',
+                is_array: false,
+                rules: [],
+                grid_span: 1,
+                order: index,
+                placeholder: '',
+                text_transform: 'none',
+                options: [],
+            };
         }
+
         return {
-            key: f.key || 'unknown_field',
-            label: f.label || (f.key ? f.key.replace(/_/g, ' ') : 'Detail'),
-            type: f.type || 'string',
-            ui_component: f.ui_component || 'text_input',
-            grid_span: f.grid_span || 1,
-            placeholder: f.placeholder || '',
-            rules: f.rules || [],
-            is_array: f.is_array || false,
-            text_transform: f.text_transform || 'none' // 🟢 Pulling the uppercase/capitalize rules
+            key: field?.key || `field_${index + 1}`,
+            label: field?.label || humanize(field?.key || `Field ${index + 1}`),
+            type: field?.type || 'string',
+            ui_component: field?.ui_component || field?.component || defaultUiComponentForType(field?.type),
+            is_array: Boolean(field?.is_array),
+            rules: Array.isArray(field?.rules) ? field.rules : [],
+            grid_span: Number(field?.grid_span || 1),
+            order: Number(field?.order || index),
+            placeholder: field?.placeholder || '',
+            text_transform: field?.text_transform || 'none',
+            options: Array.isArray(field?.options) ? field.options : [],
         };
-    });
+    }).sort((a, b) => a.order - b.order);
 });
 
 const calculatedTax = computed(() => {
-    const base = parseFloat(props.item.unit_fare) || 0;
-    const val = parseFloat(props.item.tax_value) || 0;
-    return props.item.tax_type === '%' ? base * (val / 100) : val;
+    const base = Number(props.item.unit_fare || 0);
+    const taxValue = Number(props.item.tax_value || 0);
+
+    return props.item.tax_type === '%'
+        ? base * (taxValue / 100)
+        : taxValue;
 });
 
-const calculatedProfit = computed(() => {
-    const base = parseFloat(props.item.unit_fare) || 0;
-    const clientPrice = parseFloat(props.item.client_price) || 0;
-    return clientPrice - base - calculatedTax.value;
+const totalBaseCost = computed(() => {
+    return Number(props.item.unit_fare || 0) * Number(props.item.qty || 0);
+});
+
+const totalTax = computed(() => {
+    return calculatedTax.value * Number(props.item.qty || 0);
+});
+
+const totalMargin = computed(() => {
+    const perUnitMargin = Number(props.item.client_price || 0)
+        - Number(props.item.unit_fare || 0)
+        - calculatedTax.value;
+
+    return perUnitMargin * Number(props.item.qty || 0);
 });
 
 const lineTotal = computed(() => {
-    const cp = parseFloat(props.item.client_price) || 0;
-    const q = parseInt(props.item.qty) || 1;
-    return cp * q;
+    return Number(props.item.client_price || 0) * Number(props.item.qty || 0);
 });
 
-const summarySnippet = computed(() => {
-    if (!props.item.service_details) return '';
-    const values = [];
-    Object.values(props.item.service_details).forEach(val => {
-        if (Array.isArray(val)) {
-            val.forEach(v => { if (typeof v === 'string' && v.trim() !== '') values.push(v); });
-        } else if (typeof val === 'string' && val.trim() !== '') {
-            values.push(val);
-        }
-    });
-    return values.slice(0, 3).join(' • ') + (values.length > 3 ? '...' : '');
-});
+function getHtmlInputType(type, uiComponent) {
+    if (uiComponent === 'date' || type === 'date') {
+        return 'date';
+    }
+
+    if (uiComponent === 'email' || type === 'email') {
+        return 'email';
+    }
+
+    if (uiComponent === 'number' || type === 'number' || type === 'integer' || type === 'decimal') {
+        return 'number';
+    }
+
+    if (uiComponent === 'tel' || type === 'tel' || type === 'phone') {
+        return 'tel';
+    }
+
+    return 'text';
+}
+
+function onFileChange(event, key) {
+    props.item.service_details[key] = event.target.files?.[0] || null;
+}
+
+function safelyParseJson(value) {
+    try {
+        return JSON.parse(value);
+    } catch {
+        return {};
+    }
+}
+
+function formatNumber(value) {
+    return Number(value || 0).toFixed(2);
+}
+
+function humanize(value) {
+    return String(value || '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function defaultUiComponentForType(type) {
+    if (type === 'text') {
+        return 'textarea';
+    }
+
+    if (type === 'date') {
+        return 'date';
+    }
+
+    if (type === 'file') {
+        return 'file';
+    }
+
+    return 'input';
+}
+
+function normalizeOptionValue(option) {
+    return typeof option === 'object'
+        ? (option.value ?? option.label ?? '')
+        : option;
+}
+
+function normalizeOptionLabel(option) {
+    return typeof option === 'object'
+        ? (option.label ?? option.value ?? '')
+        : option;
+}
 </script>

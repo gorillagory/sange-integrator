@@ -2,99 +2,201 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Company;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class TenantMigrationManager extends Command
 {
-    /**
-     * The name and signature of the console command.
-     */
     protected $signature = 'tenant:migrate
-                            {--refresh : Drop all tables and re-migrate}
-                            {--seed : Seed the database with records}';
+                            {subdomain? : Optional tenant subdomain, e.g. btravel}
+                            {--shared : Run only shared tenant migrations}
+                            {--industry-only : Run only industry-specific migrations}
+                            {--path= : Run one specific migration path}
+                            {--refresh : Run migrate:refresh instead of migrate}
+                            {--seed : Seed after migration when supported}
+                            {--list : Show targeted tenants only, do not migrate}';
 
-    /**
-     * The console command description.
-     */
-    protected $description = 'Run migrations against all active physical tenant databases.';
+    protected $description = 'Run tenant migrations for one tenant or all active tenants using the dynamic tenant connection';
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function handle(): int
     {
-        $this->info('Initializing Nexus Tenant Migration Manager...');
+        $this->info('Initializing Tenant Migration Manager...');
 
-        // 1. Fetch all active companies from the control database
         try {
-            $companies = DB::connection('control')->table('companies')->where('is_active', true)->get();
-        } catch (\Exception $e) {
-            $this->error('CRITICAL: Could not read from sange_control. Did you migrate the control database?');
-            return Command::FAILURE;
+            $companies = $this->resolveCompanies();
+        } catch (Throwable $exception) {
+            $this->error('Failed to resolve companies from the control database.');
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
         }
 
         if ($companies->isEmpty()) {
-            $this->warn('No active companies found in the control database.');
-            return Command::SUCCESS;
+            $this->warn('No matching active companies found.');
+
+            return self::SUCCESS;
         }
 
-        // 2. Loop through each physical database
+        if ($this->option('list')) {
+            $this->renderCompanyList($companies);
+
+            return self::SUCCESS;
+        }
+
+        $failures = 0;
+
         foreach ($companies as $company) {
-            $this->line("\n=========================================");
-            $this->info("⚙️  Migrating Tenant: {$company->name} [DB: {$company->db_name}]");
-            $this->line("=========================================");
+            $this->newLine();
+            $this->line('============================================================');
+            $this->info("Tenant: {$company->name}");
+            $this->line("Subdomain: {$company->subdomain}");
+            $this->line("Database: {$company->db_name}");
+            $this->line("Industry: {$company->industry}");
+            $this->line('============================================================');
 
-            // 3. Dynamically reconfigure the database connection
-            Config::set('database.connections.tenant.database', $company->db_name);
-            DB::purge('tenant');      // Destroy old connection cache
-            DB::reconnect('tenant');  // Connect to the new tenant DB
-
-            // 4. 🧠 THE FIX: Dynamically build the migration paths
-            $paths = [];
-
-            // Add shared tenant migrations (if they exist)
-            if (is_dir(base_path('database/migrations/tenant/shared'))) {
-                $paths[] = 'database/migrations/tenant/shared';
-            }
-
-            // Add industry-specific migrations (e.g. 'travel')
-            $industryPath = 'database/migrations/tenant/' . strtolower($company->industry);
-            if (is_dir(base_path($industryPath))) {
-                $paths[] = $industryPath;
-            }
-
-            if (empty($paths)) {
-                $this->warn("⚠️ No migration folders found for industry: {$company->industry}. Skipping.");
+            if (! $company->db_name) {
+                $this->warn("Skipping {$company->name}: missing db_name.");
                 continue;
             }
 
-            // 5. Prepare Artisan command options
-            $options = [
-                '--database' => 'tenant',
-                '--path' => $paths,
-                '--force' => true,
-            ];
+            $paths = $this->resolvePathsForCompany($company);
 
-            if ($this->option('seed')) {
-                $options['--seed'] = true;
+            if (empty($paths)) {
+                $this->warn("Skipping {$company->name}: no migration paths matched.");
+                continue;
             }
 
-            $command = $this->option('refresh') ? 'migrate:refresh' : 'migrate';
+            $this->line('Paths:');
+            foreach ($paths as $path) {
+                $this->line(" - {$path}");
+            }
 
-            // 6. Execute the migration securely
             try {
-                Artisan::call($command, $options, $this->output);
-                $this->info("✅ Successfully migrated: {$company->name}");
-            } catch (\Exception $e) {
-                $this->error("❌ Migration failed for {$company->name}: " . $e->getMessage());
+                $this->connectTenantDatabase($company->db_name);
+
+                $command = $this->option('refresh') ? 'migrate:refresh' : 'migrate';
+
+                $options = [
+                    '--database' => 'tenant',
+                    '--path' => $paths,
+                    '--force' => true,
+                ];
+
+                if ($this->option('seed')) {
+                    $options['--seed'] = true;
+                }
+
+                $exitCode = Artisan::call($command, $options, $this->output);
+
+                $this->output->write(Artisan::output());
+
+                if ($exitCode !== 0) {
+                    $failures++;
+                    $this->error("Migration command returned non-zero exit code for {$company->name}.");
+                    continue;
+                }
+
+                $this->info("Migration completed for {$company->name}.");
+            } catch (Throwable $exception) {
+                $failures++;
+                $this->error("Migration failed for {$company->name}.");
+                $this->error($exception->getMessage());
             }
         }
 
         $this->newLine();
-        $this->info('All physical tenant migrations completed successfully.');
-        return Command::SUCCESS;
+
+        if ($failures > 0) {
+            $this->error("Tenant migration finished with {$failures} failure(s).");
+
+            return self::FAILURE;
+        }
+
+        $this->info('Tenant migration finished successfully.');
+
+        return self::SUCCESS;
+    }
+
+    private function resolveCompanies(): Collection
+    {
+        $query = Company::query()
+            ->where('is_active', true)
+            ->orderBy('name');
+
+        $subdomain = $this->argument('subdomain');
+
+        if ($subdomain) {
+            $query->where('subdomain', $subdomain);
+        }
+
+        return $query->get([
+            'id',
+            'name',
+            'subdomain',
+            'db_name',
+            'industry',
+            'is_active',
+        ]);
+    }
+
+    private function resolvePathsForCompany(Company $company): array
+    {
+        $customPath = $this->option('path');
+
+        if ($customPath) {
+            return $this->filterExistingPaths([$customPath]);
+        }
+
+        $paths = [];
+
+        if (! $this->option('industry-only')) {
+            $paths[] = 'database/migrations/tenant/shared';
+        }
+
+        if (! $this->option('shared')) {
+            $paths[] = 'database/migrations/tenant/' . strtolower((string) $company->industry);
+        }
+
+        return $this->filterExistingPaths($paths);
+    }
+
+    private function filterExistingPaths(array $paths): array
+    {
+        return collect($paths)
+            ->filter()
+            ->map(fn ($path) => trim((string) $path))
+            ->unique()
+            ->filter(fn ($path) => is_dir(base_path($path)))
+            ->values()
+            ->all();
+    }
+
+    private function connectTenantDatabase(string $databaseName): void
+    {
+        Config::set('database.connections.tenant.database', $databaseName);
+
+        DB::purge('tenant');
+        DB::reconnect('tenant');
+    }
+
+    private function renderCompanyList(Collection $companies): void
+    {
+        $rows = $companies->map(fn (Company $company) => [
+            'ID' => $company->id,
+            'Name' => $company->name,
+            'Subdomain' => $company->subdomain,
+            'Database' => $company->db_name,
+            'Industry' => $company->industry,
+        ])->all();
+
+        $this->table(
+            ['ID', 'Name', 'Subdomain', 'Database', 'Industry'],
+            $rows
+        );
     }
 }
