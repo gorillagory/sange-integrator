@@ -4,11 +4,17 @@ namespace Database\Seeders;
 
 use App\Models\DocumentTemplate;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class DocumentTemplateSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! Schema::hasTable('document_templates')) {
+            $this->command?->warn('Skipped DocumentTemplateSeeder: table [document_templates] does not exist on active connection.');
+            return;
+        }
+
         $path = database_path('seeders/data/document_templates/master_bt_1.txt');
 
         if (! is_file($path)) {

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Role;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -35,16 +34,6 @@ class RbacSeeder extends Seeder
         foreach (self::TENANT_ROLES as $roleName) {
             Role::findOrCreate($roleName, 'web');
         }
-
-        $admin = User::updateOrCreate(
-            ['email' => 'admin@bayam.test'],
-            [
-                'name' => 'Admin Director',
-                'password' => 'password',
-            ]
-        );
-
-        $admin->syncRoles(['super_admin']);
 
         app(PermissionRegistrar::class)->setPermissionsTeamId(self::GLOBAL_TEAM_ID);
 

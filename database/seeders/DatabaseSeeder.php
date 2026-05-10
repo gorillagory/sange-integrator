@@ -10,6 +10,11 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RbacSeeder::class,
+            GenesisSeeder::class,
+            ModuleSeeder::class,
+            CompanyModuleSeeder::class,
+            SchemaSeeder::class,
+            TemplateSeeder::class,
             DocumentTemplateSeeder::class,
         ]);
     }
