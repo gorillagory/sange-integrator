@@ -21,6 +21,10 @@ export function documentStoreUrl() {
     return '/admin/documents';
 }
 
+export function documentIndexUrl() {
+    return '/admin/documents';
+}
+
 export function documentUpdateUrl(id) {
     return `/admin/documents/${id}`;
 }
@@ -28,4 +32,8 @@ export function documentUpdateUrl(id) {
 export function documentPreviewUrl({ pageProps, templateId }) {
     const subdomain = pageProps?.currentCompany?.subdomain;
     return `/admin/documents/${subdomain}/${templateId}/preview`;
+}
+
+export function documentPreviewHtmlUrl() {
+    return '/admin/documents/preview-html';
 }

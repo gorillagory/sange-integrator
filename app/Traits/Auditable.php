@@ -13,13 +13,21 @@ trait Auditable
      */
     public static function bootAuditable()
     {
+        static::updating(function ($model) {
+            $dirty = $model->getDirty();
+            $model->setRelation('__audit_original_values', Arr::only($model->getOriginal(), array_keys($dirty)));
+        });
+
         static::created(function ($model) {
             AuditEngine::log('RECORD', 'DATA.CREATED', self::cleanLogData($model, $model->toArray()), [], $model);
         });
 
         static::updated(function ($model) {
-            $newValues = $model->getDirty();
-            $oldValues = Arr::only($model->getOriginal(), array_keys($newValues));
+            $newValues = $model->getChanges();
+            unset($newValues['updated_at']);
+
+            $oldValues = $model->getRelation('__audit_original_values') ?? [];
+            $model->unsetRelation('__audit_original_values');
 
             // Only log if something actually changed
             if (!empty($newValues)) {

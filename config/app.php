@@ -54,6 +54,17 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'base_domain' => env(
+        'APP_BASE_DOMAIN',
+        preg_replace(
+            '/^(sys|www)\./',
+            '',
+            parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost',
+        )
+    ),
+
+    'system_subdomain' => env('APP_SYSTEM_SUBDOMAIN', 'sys'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

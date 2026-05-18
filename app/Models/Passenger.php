@@ -1,7 +1,5 @@
 <?php
 
-// app/Models/Passenger.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -30,8 +28,8 @@ class Passenger extends Model
         ];
     }
 
-    public function booking(): BelongsTo
+    public function operation(): BelongsTo
     {
-        return $this->belongsTo(Booking::class);
+        return $this->belongsTo(Operation::class, 'booking_id');
     }
 }

@@ -78,6 +78,38 @@ export function useBlockBindings({ form }) {
         return Array.isArray(node.columns) ? node.columns : [];
     }
 
+    function resolveTableSummary(node, payload = null) {
+        if (!node || node.type !== 'table') {
+            return {
+                subtotal: '',
+                tax_total: '',
+                grand_total: '',
+            };
+        }
+
+        const activePayload = payload ?? previewPayload.value;
+        const dataKey = String(node.data_key || '');
+        const rootPath = dataKey.endsWith('.line_items')
+            ? dataKey.slice(0, -1 * '.line_items'.length)
+            : '';
+
+        const subtotal = rootPath
+            ? resolveDataPath(`${rootPath}.subtotal`, activePayload)
+            : null;
+        const taxTotal = rootPath
+            ? resolveDataPath(`${rootPath}.tax_total`, activePayload)
+            : null;
+        const grandTotal = rootPath
+            ? resolveDataPath(`${rootPath}.grand_total`, activePayload)
+            : null;
+
+        return {
+            subtotal: subtotal ?? resolveDataPath('finance.formatted_subtotal', activePayload) ?? '',
+            tax_total: taxTotal ?? resolveDataPath('finance.formatted_tax_total', activePayload) ?? '',
+            grand_total: grandTotal ?? resolveDataPath('finance.formatted_grand_total', activePayload) ?? '',
+        };
+    }
+
     function resolveImage(node, payload = null) {
         return resolveImageSource(node, payload ?? previewPayload.value);
     }
@@ -113,6 +145,7 @@ export function useBlockBindings({ form }) {
         resolveListItems,
         resolveTableRows,
         resolveTableColumns,
+        resolveTableSummary,
         resolveImage,
         resolveBlockValue,
     };

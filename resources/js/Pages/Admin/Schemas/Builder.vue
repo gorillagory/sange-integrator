@@ -1,187 +1,336 @@
 <template>
     <TenantLayout>
         <template #breadcrumbs>
-            <Breadcrumbs :items="[
-                { label: 'Admin Settings', url: null },
-                { label: 'Service Vectors', url: '/admin/schemas' },
-                { label: isEditing ? `Edit: ${form.display_name}` : 'Create New Vector', url: null }
-            ]" />
+            <Breadcrumbs :items="breadcrumbItems" />
         </template>
 
-        <div class="mb-8 flex justify-between items-end">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">{{ isEditing ? 'Edit Schema Vector' : 'Create New Vector' }}</h1>
-                <p class="text-sm text-gray-500 mt-1">{{ isEditing ? `Modifying ${form.display_name}.` : 'Design operational payloads for master bookings.' }}</p>
-            </div>
-            <button
-                @click="attemptSave"
-                :disabled="form.processing"
-                class="px-6 py-2.5 bg-[var(--brand-600)] hover:bg-[var(--brand-500)] text-white text-sm font-bold rounded-xl transition shadow-lg flex items-center gap-2"
-                :class="{'animate-shake bg-red-600': isShaking}"
-            >
-                <svg v-if="!form.processing" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                <svg v-else class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                {{ isEditing ? 'Update & Sync Vector' : 'Deploy Schema to Production' }}
-            </button>
-        </div>
+        <div v-if="!isEditing" class="mx-auto max-w-4xl pb-16">
+            <div class="rounded-3xl border border-gray-200 bg-white p-10 shadow-sm">
+                <div class="inline-flex rounded-full border border-[var(--brand-200)] bg-[var(--brand-50)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--brand-700)]">
+                    Central Governance
+                </div>
+                <h1 class="mt-5 text-3xl font-bold text-gray-900">Schema authoring is handled in Blueprint Forge</h1>
+                <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-600">
+                    Tenant workspaces no longer carry a second full schema editor. This keeps the platform simpler:
+                    blueprint design, versioning, and structural changes stay in the central forge, while tenant teams review the published vectors that are already safe to use.
+                </p>
 
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start pb-20">
-            <div class="xl:col-span-4 space-y-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">1. Core Definition</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Display Name <span class="text-red-500">*</span></label>
-                            <input v-model="form.display_name" @input="generateSystemKey" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:bg-white focus:border-[var(--brand-500)]" placeholder="e.g. Hotel Accommodation">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">System Key (Immutable) <span class="text-red-500">*</span></label>
-                            <input v-model="form.service_type" type="text" class="w-full bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-600" placeholder="hotel_accommodation" :readonly="isEditing">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Target Industry</label>
-                            <select v-model="form.industry" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:bg-white">
-                                <option value="travel">Travel & Tourism</option>
-                                <option value="logistics">Logistics</option>
-                                <option value="events">Event Management</option>
-                            </select>
-                        </div>
-
-                        <div class="pt-3 border-t border-gray-100">
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2">Pricing Units</label>
-
-                            <div class="flex items-center gap-2 mb-3">
-                                <input
-                                    v-model="newUnit"
-                                    @keydown.enter.prevent="addUnit"
-                                    type="text"
-                                    class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:bg-white focus:border-[var(--brand-500)]"
-                                    placeholder="Type unit and press Enter (e.g., Pax, Room)"
-                                >
-                                <button @click.prevent="addUnit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">Add</button>
-                            </div>
-
-                            <div class="flex flex-wrap gap-2 min-h-[36px] p-2 bg-gray-50 border border-gray-100 rounded-lg items-center">
-                                <span v-if="form.pricing_units.length === 0" class="text-[10px] text-gray-400 italic">No units added. Default calculation is 1.</span>
-
-                                <span
-                                    v-for="(unit, index) in form.pricing_units"
-                                    :key="index"
-                                    class="flex items-center gap-1.5 bg-white border border-[var(--brand-200)] px-2 py-1 rounded shadow-sm group"
-                                >
-                                    <span class="text-[10px] font-bold text-[var(--brand-700)] uppercase tracking-wider">{{ unit }}</span>
-                                    <button @click.prevent="removeUnit(index)" class="text-[var(--brand-400)] hover:text-red-500 focus:outline-none transition opacity-50 group-hover:opacity-100" title="Remove unit">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    </button>
-                                </span>
-                            </div>
-                            <p class="text-[8px] text-gray-400 mt-2 uppercase tracking-widest">Calculates as: Base Price × {{ form.pricing_units.length > 0 ? form.pricing_units.join(' × ') : '1' }}</p>
-                        </div>
+                <div class="mt-8 grid gap-4 md:grid-cols-3">
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                        <div class="text-xs font-bold uppercase tracking-[0.18em] text-gray-400">Blueprint Forge Owns</div>
+                        <div class="mt-3 text-sm font-semibold text-gray-900">Structure, validation, versioning, and lifecycle.</div>
+                    </div>
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                        <div class="text-xs font-bold uppercase tracking-[0.18em] text-gray-400">Tenant Side Owns</div>
+                        <div class="mt-3 text-sm font-semibold text-gray-900">Review, understanding, and operational use of published vectors.</div>
+                    </div>
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                        <div class="text-xs font-bold uppercase tracking-[0.18em] text-gray-400">Why This Matters</div>
+                        <div class="mt-3 text-sm font-semibold text-gray-900">Less duplication, less drift, and a cleaner mental model for teams.</div>
                     </div>
                 </div>
 
-                <VisualDocumentEditor
-                    v-model="form.document_output"
-                    :schema-fields="form.schema_payload"
-                />
-            </div>
-
-            <div class="xl:col-span-5">
-                <AttributeManager v-model="form.schema_payload" />
-            </div>
-
-            <div class="xl:col-span-3 sticky top-6">
-                <SchemaPreview :fields="form.schema_payload" :compiledJson="compiledJson" />
+                <div class="mt-8 flex flex-wrap gap-3">
+                    <Link
+                        href="/admin/schemas"
+                        class="inline-flex items-center rounded-xl bg-[var(--brand-600)] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[var(--brand-500)]"
+                    >
+                        Back to Schema Manager
+                    </Link>
+                </div>
             </div>
         </div>
 
-        <GlobalToast ref="toastRef" />
+        <div v-else class="pb-16">
+            <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+                <div class="font-bold">Review mode only.</div>
+                <div class="mt-1 text-amber-800">
+                    This tenant screen is intentionally read-only for structure. If this vector needs new fields, rules, attachments, or a new version,
+                    update it centrally in Blueprint Forge and then publish the next approved revision.
+                </div>
+            </div>
+
+            <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <div class="inline-flex rounded-full border border-gray-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-gray-500">
+                        Published Vector Review
+                    </div>
+                    <h1 class="mt-3 text-3xl font-bold text-gray-900">{{ schema.service_name || schema.display_name }}</h1>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Review the contract your operations team will use inside service records.
+                    </p>
+                </div>
+                <Link
+                    href="/admin/schemas"
+                    class="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 transition hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
+                >
+                    Back to Manager
+                </Link>
+            </div>
+
+            <div class="grid grid-cols-1 gap-8 xl:grid-cols-12">
+                <div class="space-y-6 xl:col-span-4">
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-[0.18em] text-gray-400">Identity</h2>
+                        <dl class="mt-4 space-y-4">
+                            <div>
+                                <dt class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Service Name</dt>
+                                <dd class="mt-1 text-base font-semibold text-gray-900">{{ schema.service_name || schema.display_name }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Service Code</dt>
+                                <dd class="mt-1 font-mono text-sm text-gray-700">{{ schema.service_code || schema.service_type }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Industry</dt>
+                                <dd class="mt-1 text-sm font-semibold text-gray-900">{{ schema.industry || industry }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                            <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Version</div>
+                            <div class="mt-2 text-2xl font-black text-[var(--brand-700)]">v{{ schema.version || 1 }}</div>
+                        </div>
+                        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                            <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Field Count</div>
+                            <div class="mt-2 text-2xl font-black text-gray-900">{{ fields.length }}</div>
+                        </div>
+                        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                            <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Lifecycle</div>
+                            <div class="mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em]" :class="statusClasses(schema.status)">
+                                {{ schema.status || 'draft' }}
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                            <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Default</div>
+                            <div class="mt-2 text-sm font-bold" :class="schema.is_default ? 'text-emerald-700' : 'text-gray-500'">
+                                {{ schema.is_default ? 'Primary Published Vector' : 'Secondary Published Vector' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-[0.18em] text-gray-400">Operational Notes</h2>
+                        <ul class="mt-4 space-y-3 text-sm text-gray-600">
+                            <li>Use this vector as a governed capture contract inside service records.</li>
+                            <li>Every service record row should point to the exact published version used at capture time.</li>
+                            <li>Structure changes should create a new approved version centrally rather than mutating this contract in tenant space.</li>
+                        </ul>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-[0.18em] text-gray-400">Pricing Units</h2>
+                        <div v-if="pricingUnits.length > 0" class="mt-4 flex flex-wrap gap-2">
+                            <span
+                                v-for="unit in pricingUnits"
+                                :key="unit"
+                                class="rounded-full border border-[var(--brand-200)] bg-[var(--brand-50)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--brand-700)]"
+                            >
+                                {{ unit }}
+                            </span>
+                        </div>
+                        <p v-else class="mt-4 text-sm text-gray-500">No explicit pricing units were configured on this vector.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 xl:col-span-5">
+                    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <h2 class="text-sm font-bold uppercase tracking-[0.18em] text-gray-400">Field Contract</h2>
+                                <p class="mt-1 text-sm text-gray-500">This is the payload structure operations will fill.</p>
+                            </div>
+                        </div>
+
+                        <div v-if="fields.length === 0" class="mt-6 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center text-sm text-gray-500">
+                            No fields were defined on this vector.
+                        </div>
+
+                        <div v-else class="mt-6 space-y-4">
+                            <div
+                                v-for="(field, index) in fields"
+                                :key="field.key || index"
+                                class="rounded-2xl border border-gray-200 bg-gray-50 p-4"
+                            >
+                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                    <div>
+                                        <div class="text-sm font-bold text-gray-900">{{ field.label || 'Untitled Field' }}</div>
+                                        <div class="mt-1 font-mono text-[11px] text-gray-500">{{ field.key || 'missing_key' }}</div>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 border border-gray-200">
+                                            {{ prettyComponent(field.ui_component) }}
+                                        </span>
+                                        <span class="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500 border border-gray-200">
+                                            {{ Number(field.grid_span) === 2 ? 'Full Width' : 'Half Width' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 grid gap-3 md:grid-cols-2">
+                                    <div>
+                                        <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Placeholder</div>
+                                        <div class="mt-1 text-sm text-gray-600">{{ field.placeholder || 'No placeholder provided' }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Rules</div>
+                                        <div class="mt-1 text-sm text-gray-600">{{ formatRules(field.rules) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="documentOutput" class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-[0.18em] text-gray-400">Document Output Notes</h2>
+                        <pre class="mt-4 overflow-x-auto rounded-2xl bg-gray-950 px-4 py-4 text-xs leading-6 text-emerald-300">{{ documentOutput }}</pre>
+                    </div>
+                </div>
+
+                <div class="xl:col-span-3">
+                    <div class="sticky top-6 rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div class="border-b border-gray-100 bg-gray-50 px-5 py-4">
+                            <div class="text-sm font-bold text-gray-800">Operational Preview</div>
+                            <div class="mt-1 text-xs text-gray-500">How this vector feels to an operator during capture.</div>
+                        </div>
+
+                        <div class="p-5">
+                            <div class="grid grid-cols-1 gap-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+                                <div v-if="fields.length === 0" class="text-sm text-gray-400">
+                                    Preview appears once fields exist on the vector.
+                                </div>
+
+                                <div
+                                    v-for="(field, index) in fields"
+                                    :key="`${field.key || 'field'}-preview-${index}`"
+                                    :class="Number(field.grid_span) === 2 ? 'md:col-span-2' : ''"
+                                >
+                                    <label class="mb-1 block text-xs font-semibold uppercase text-blue-900">
+                                        {{ field.label || 'Untitled Field' }}
+                                    </label>
+
+                                    <input
+                                        v-if="field.ui_component === 'text_input'"
+                                        type="text"
+                                        :placeholder="field.placeholder || 'Text input'"
+                                        class="w-full rounded-lg border-gray-300 bg-white text-sm text-gray-900 shadow-sm"
+                                        disabled
+                                    >
+
+                                    <input
+                                        v-else-if="field.ui_component === 'date_picker'"
+                                        type="date"
+                                        class="w-full rounded-lg border-gray-300 bg-white text-sm text-gray-900 shadow-sm"
+                                        disabled
+                                    >
+
+                                    <select
+                                        v-else-if="field.ui_component === 'select_dropdown'"
+                                        class="w-full rounded-lg border-gray-300 bg-white text-sm text-gray-900 shadow-sm"
+                                        disabled
+                                    >
+                                        <option>{{ field.placeholder || 'Select an option' }}</option>
+                                    </select>
+
+                                    <textarea
+                                        v-else
+                                        rows="2"
+                                        :placeholder="field.placeholder || 'Structured input'"
+                                        class="w-full rounded-lg border-gray-300 bg-white text-sm text-gray-900 shadow-sm"
+                                        disabled
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </TenantLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-
-// Internal Components
+import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import TenantLayout from '../../../Layouts/TenantLayout.vue';
 import Breadcrumbs from '../../../Components/UI/Breadcrumbs.vue';
-import SchemaPreview from './Components/SchemaPreview.vue';
-import GlobalToast from '../../../Components/GlobalToast.vue';
-import VisualDocumentEditor from './Components/VisualDocumentEditor.vue';
-import AttributeManager from './Components/AttributeManager.vue';
 
-// Composables
-import { useSchemaCompiler } from './Composables/useSchemaCompiler';
-
-const props = defineProps({ schema: { type: Object, default: null } });
-const isEditing = computed(() => !!props.schema);
-const toastRef = ref(null);
-const isShaking = ref(false);
-
-// Extract Data
-const getInitialPayload = () => {
-    if (!props.schema?.schema_payload) return [];
-    const parsed = typeof props.schema.schema_payload === 'string' ? JSON.parse(props.schema.schema_payload) : props.schema.schema_payload;
-    return (parsed.fields || []).map((f, i) => ({ ...f, order: f.order ?? i, _show_advanced: false, _is_minimized: true, _key_manually_edited: true }));
-};
-
-const getInitialData = (key, fallback) => {
-    if (!props.schema?.schema_payload) return fallback;
-    const parsed = typeof props.schema.schema_payload === 'string' ? JSON.parse(props.schema.schema_payload) : props.schema.schema_payload;
-    return parsed[key] || fallback;
-};
-
-// Form State
-const form = useForm({
-    display_name: props.schema?.display_name || '',
-    service_type: props.schema?.service_type || '',
-    industry: props.schema?.industry || 'travel',
-    schema_payload: getInitialPayload(),
-    document_output: getInitialData('document_output', ''),
-    pricing_units: getInitialData('pricing_units', [])
+const props = defineProps({
+    schema: {
+        type: Object,
+        default: null,
+    },
+    industry: {
+        type: String,
+        default: 'travel',
+    },
 });
 
-// JSON Compilation Magic via Composable
-const { compiledJson, hasGlobalDuplicates } = useSchemaCompiler(form);
+const isEditing = computed(() => Boolean(props.schema));
 
-// Dynamic Units
-const newUnit = ref('');
-const addUnit = () => {
-    const val = newUnit.value.trim().toLowerCase();
-    if (val && !form.pricing_units.includes(val)) form.pricing_units.push(val);
-    newUnit.value = '';
-};
-const removeUnit = (index) => form.pricing_units.splice(index, 1);
-
-// Generate Key
-const generateSystemKey = () => {
-    if (isEditing.value) return;
-    form.service_type = form.display_name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
-};
-
-// Save Logic
-const attemptSave = () => {
-    if (hasGlobalDuplicates.value) {
-        isShaking.value = true;
-        toastRef.value.addToast('Cannot deploy: Resolve duplicate keys first!', 'error');
-        setTimeout(() => { isShaking.value = false; }, 600);
-        return;
+const payload = computed(() => {
+    if (!props.schema?.schema_payload) {
+        return {};
     }
 
-    const payloadToSave = { ...form.data(), schema_payload: JSON.parse(compiledJson.value) };
-    const method = isEditing.value ? 'put' : 'post';
-    const url = isEditing.value ? `/admin/schemas/${props.schema.id}` : '/admin/schemas';
+    return typeof props.schema.schema_payload === 'string'
+        ? JSON.parse(props.schema.schema_payload)
+        : props.schema.schema_payload;
+});
 
-    form.transform(() => payloadToSave)[method](url);
+const fields = computed(() => Array.isArray(payload.value?.fields) ? payload.value.fields : []);
+const pricingUnits = computed(() => Array.isArray(payload.value?.pricing_units) ? payload.value.pricing_units : []);
+const documentOutput = computed(() => payload.value?.document_output || '');
+
+const breadcrumbItems = computed(() => {
+    if (!isEditing.value) {
+        return [
+            { label: 'Admin Settings', url: null },
+            { label: 'Schema Manager', url: '/admin/schemas' },
+            { label: 'Centralized Authoring', url: null },
+        ];
+    }
+
+    return [
+        { label: 'Admin Settings', url: null },
+        { label: 'Schema Manager', url: '/admin/schemas' },
+        { label: props.schema.service_name || props.schema.display_name || 'Vector Review', url: null },
+    ];
+});
+
+const prettyComponent = (component) => {
+    switch (component) {
+        case 'text_input':
+            return 'Text Input';
+        case 'date_picker':
+            return 'Date Picker';
+        case 'select_dropdown':
+            return 'Dropdown';
+        default:
+            return component || 'Field';
+    }
+};
+
+const formatRules = (rules) => {
+    if (!Array.isArray(rules) || rules.length === 0) {
+        return 'No explicit validation rules';
+    }
+
+    return rules.join(', ');
+};
+
+const statusClasses = (status) => {
+    switch ((status || '').toLowerCase()) {
+        case 'active':
+            return 'border border-emerald-200 bg-emerald-50 text-emerald-700';
+        case 'deprecated':
+            return 'border border-amber-200 bg-amber-50 text-amber-700';
+        case 'archived':
+            return 'border border-gray-200 bg-gray-100 text-gray-600';
+        default:
+            return 'border border-sky-200 bg-sky-50 text-sky-700';
+    }
 };
 </script>
-
-<style scoped>
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
-}
-.animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
-</style>

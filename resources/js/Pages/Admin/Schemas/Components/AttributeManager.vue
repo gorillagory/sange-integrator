@@ -1,12 +1,12 @@
 <template>
     <div class="space-y-4">
         <div class="flex justify-between items-center mb-2">
-            <h3 class="font-bold text-gray-900">2. Payload Attributes ({{ modelValue.length }})</h3>
-            <button @click.prevent="addField" class="text-xs font-bold text-[var(--brand-600)] flex items-center gap-1 hover:text-[var(--brand-700)] transition">+ Add Attribute</button>
+            <h3 :class="headingClass" class="font-bold">{{ title }}</h3>
+            <button @click.prevent="addField" :class="buttonClass" class="text-xs font-bold flex items-center gap-1 transition">+ Add Field</button>
         </div>
 
-        <div v-if="modelValue.length === 0" class="p-8 border-2 border-dashed border-gray-200 rounded-2xl text-center text-gray-500 text-sm font-medium bg-gray-50">
-            No attributes defined.
+        <div v-if="modelValue.length === 0" :class="emptyStateClass" class="p-8 border-2 border-dashed rounded-2xl text-center text-sm font-medium">
+            No fields added yet.
         </div>
 
         <VueDraggableNext :list="modelValue" handle=".handle" class="space-y-3" @change="recalculateOrder">
@@ -16,6 +16,7 @@
                 v-model="modelValue[index]"
                 :availableParents="availableParentKeys(index)"
                 :otherKeys="getOtherKeys(index)"
+                :surface="surface"
                 @remove="removeField(index)"
             />
         </VueDraggableNext>
@@ -27,8 +28,18 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import FieldEditor from './FieldEditor.vue';
 
 const props = defineProps({
-    modelValue: { type: Array, required: true }
+    modelValue: { type: Array, required: true },
+    surface: { type: String, default: 'light' },
+    title: { type: String, default: '2. Schema Fields' },
 });
+
+const headingClass = props.surface === 'dark' ? 'text-white' : 'text-gray-900';
+const buttonClass = props.surface === 'dark'
+    ? 'text-indigo-300 hover:text-white'
+    : 'text-[var(--brand-600)] hover:text-[var(--brand-700)]';
+const emptyStateClass = props.surface === 'dark'
+    ? 'border-white/10 bg-[#131d31] text-gray-400'
+    : 'border-gray-200 bg-gray-50 text-gray-500';
 
 const recalculateOrder = () => {
     props.modelValue.forEach((f, i) => { f.order = i; });

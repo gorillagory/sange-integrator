@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             GenesisSeeder::class,
             ModuleSeeder::class,
             CompanyModuleSeeder::class,
+            BayamTravelRoleUsersSeeder::class,
             SchemaSeeder::class,
             TemplateSeeder::class,
             DocumentTemplateSeeder::class,

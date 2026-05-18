@@ -37,12 +37,28 @@
                         <h3 class="font-bold text-lg text-gray-900">{{ template.name }}</h3>
                         <span class="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">{{ template.code }}</span>
                     </div>
-                    <span class="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded uppercase border border-blue-100">{{ template.document_type }}</span>
+                    <div class="flex flex-col items-end gap-1">
+                        <span class="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded uppercase border border-blue-100">{{ template.document_type }}</span>
+                        <span
+                            class="px-2 py-0.5 text-[9px] font-bold rounded uppercase border"
+                            :class="template.compatibility?.status === 'compatible'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                : 'bg-amber-50 text-amber-700 border-amber-100'"
+                        >
+                            {{ template.compatibility?.status === 'compatible' ? 'Compatible' : 'Review Needed' }}
+                        </span>
+                    </div>
                 </div>
 
-                <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-6 flex justify-between items-center">
+                <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-3 flex justify-between items-center">
                     <span class="text-xs font-bold text-gray-500 uppercase">Layout Blocks</span>
                     <span class="text-sm font-black text-gray-900">{{ getBlockCount(template.layout_vector) }} Nodes</span>
+                </div>
+                <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-6 flex justify-between items-center">
+                    <span class="text-xs font-bold text-gray-500 uppercase">Binding Issues</span>
+                    <span class="text-sm font-black" :class="(template.compatibility?.issue_count || 0) === 0 ? 'text-emerald-700' : 'text-amber-700'">
+                        {{ template.compatibility?.issue_count || 0 }}
+                    </span>
                 </div>
 
                 <div class="flex gap-2">
@@ -88,11 +104,30 @@ const deleteState = reactive({
     activeTemplate: null
 });
 
+const countNodes = (nodes = []) => {
+    if (!Array.isArray(nodes)) {
+        return 0;
+    }
+
+    return nodes.reduce((sum, node) => {
+        if (!node || typeof node !== 'object') {
+            return sum;
+        }
+
+        if (node.type === 'row') {
+            const nested = (node.columns || []).reduce((nestedSum, column) => nestedSum + countNodes(column?.blocks || []), 0);
+            return sum + 1 + nested;
+        }
+
+        return sum + 1;
+    }, 0);
+};
+
 // Safely count how many logical blocks are in the layout vector
 const getBlockCount = (payload) => {
     try {
         const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
-        return parsed.nodes?.length || 0;
+        return countNodes(parsed?.header || []) + countNodes(parsed?.body || []) + countNodes(parsed?.footer || []);
     } catch (e) {
         return 0;
     }

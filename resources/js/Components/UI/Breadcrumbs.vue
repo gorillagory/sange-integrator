@@ -38,7 +38,7 @@ defineProps({
     items: {
         type: Array,
         required: true,
-        // Example structure: [{ label: 'Operations', url: null }, { label: 'Bookings', url: '/bookings' }]
+        // Example structure: [{ label: 'Operations', url: null }, { label: 'Create Operation', url: '/operations/create' }]
     }
 });
 </script>

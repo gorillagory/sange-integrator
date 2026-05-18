@@ -44,6 +44,10 @@ const props = defineProps({
         type: [File, Object, null],
         default: null,
     },
+    existingPath: {
+        type: String,
+        default: '',
+    },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -51,6 +55,16 @@ const emit = defineEmits(['update:modelValue']);
 const previewUrl = computed(() => {
     if (props.modelValue instanceof File) {
         return URL.createObjectURL(props.modelValue);
+    }
+
+    if (props.existingPath) {
+        if (String(props.existingPath).startsWith('http://') || String(props.existingPath).startsWith('https://')) {
+            return props.existingPath;
+        }
+
+        return String(props.existingPath).startsWith('/storage/')
+            ? props.existingPath
+            : `/storage/${String(props.existingPath).replace(/^storage\//, '')}`;
     }
 
     return null;

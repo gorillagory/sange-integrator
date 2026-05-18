@@ -1,23 +1,25 @@
 {
-    "name": "Nexus Cortex Hybrid",
+    "name": "sange-integrator",
     "build": { "dockerfile": "Dockerfile" },
     "customizations": {
         "vscode": {
             "extensions": [
-                "amiralizadeh9480.laravel-extra-intellisense",
-                "firebase.vscode-debug",
-                "googlecloudtools.cloudcode"
+                "laravel.vscode-laravel",
+                "bmewburn.vscode-intelephense-client",
+                "xdebug.php-debug",
+                "vue.volar",
+                "bradlc.vscode-tailwindcss",
+                "editorconfig.editorconfig"
             ]
         },
         "jetbrains": {
-            "plugins": ["com.jetbrains.php", "com.google.gct.core"]
+            "plugins": ["com.jetbrains.php"]
         }
     },
     "forwardPorts": [
-        8000, // Laravel Dev Server (APP_URL in .env)
-        3000, // React Frontend (Cortex)
-        5001, // Firestore Emulator
-        4000  // Firebase UI
+        8080, // Laravel Sail app
+        5174, // Vite dev server
+        5433  // Forwarded Postgres port
     ],
     "postCreateCommand": "composer install && npm install",
     "remoteUser": "vscode"

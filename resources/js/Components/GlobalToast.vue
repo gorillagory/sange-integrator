@@ -27,10 +27,13 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
+import { useToast } from '@/Composables/useToast';
 
 const page = usePage();
 const activeToasts = ref([]);
 let toastCounter = 0;
+const { toasts } = useToast();
+const handledToastIds = new Set();
 
 const addToast = (message, type = 'success') => {
     const id = toastCounter++;
@@ -43,6 +46,19 @@ const addToast = (message, type = 'success') => {
 watch(() => page.props.flash, (flash) => {
     if (flash?.success) addToast(flash.success, 'success');
     if (flash?.error) addToast(flash.error, 'error');
+}, { deep: true, immediate: true });
+
+watch(toasts, (items) => {
+    if (!Array.isArray(items) || !items.length) {
+        return;
+    }
+
+    items.forEach((toast) => {
+        if (!handledToastIds.has(toast.id)) {
+            handledToastIds.add(toast.id);
+            addToast(toast.message, toast.type);
+        }
+    });
 }, { deep: true, immediate: true });
 
 defineExpose({ addToast });

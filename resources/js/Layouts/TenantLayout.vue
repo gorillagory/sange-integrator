@@ -40,17 +40,18 @@
                         {{ companyName }}
                     </div>
                     <div class="text-xs text-white/60">
-                        {{ currentCompany?.subdomain || 'tenant' }}.bayam.test
+                        {{ companyHost }}
                     </div>
                 </div>
             </div>
 
             <nav class="flex-1 space-y-2 overflow-y-auto px-2 hide-scrollbar">
                 <div
+                    v-if="operationsNav.length"
                     class="mb-2 mt-4 px-4 text-[10px] font-bold uppercase tracking-widest text-white/40 transition-all duration-300"
                     :class="isExpanded ? 'h-auto opacity-100' : 'h-0 overflow-hidden opacity-0'"
                 >
-                    Operations
+                    Service Records
                 </div>
 
                 <Link
@@ -82,6 +83,7 @@
                 </Link>
 
                 <div
+                    v-if="adminNav.length"
                     class="mb-2 mt-6 px-4 text-[10px] font-bold uppercase tracking-widest text-white/40 transition-all duration-300"
                     :class="isExpanded ? 'h-auto opacity-100' : 'h-0 overflow-hidden opacity-0'"
                 >
@@ -274,8 +276,35 @@ const isExpanded = ref(false);
 
 const currentUser = computed(() => page.props?.auth?.user ?? null);
 const currentCompany = computed(() => page.props?.currentCompany ?? null);
+const brand = computed(() => page.props?.brand ?? {});
+const rbac = computed(() => page.props?.auth?.rbac ?? {});
+const tenantNav = computed(() => rbac.value?.tenant_nav ?? {});
+
+const resolvedTenantNav = computed(() => {
+    const nav = tenantNav.value ?? {};
+    const hasAnyAllowed = Object.values(nav).some((value) => Boolean(value));
+
+    if (hasAnyAllowed) {
+        return nav;
+    }
+
+    if (!currentUser.value) {
+        return nav;
+    }
+
+    // Defensive fallback: keep tenant shell navigable while backend still enforces access.
+    return {
+        dashboard: true,
+        operations: true,
+        clients: true,
+        reports: true,
+        schemas: true,
+        documents: true,
+    };
+});
 
 const companyName = computed(() => currentCompany.value?.name || 'Tenant Workspace');
+const companyHost = computed(() => brand.value?.tenant?.host || currentCompany.value?.subdomain || 'tenant');
 const companyInitial = computed(() => companyName.value.charAt(0).toUpperCase());
 
 const companyLogoUrl = computed(() => {
@@ -331,41 +360,47 @@ const operationsNav = computed(() => [
         label: 'Dashboard',
         icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
         active: isActive('/dashboard'),
+        allowed: Boolean(resolvedTenantNav.value?.dashboard),
     },
     {
-        href: '/bookings',
-        label: 'Bookings',
+        href: '/service-records',
+        label: 'Service Records',
         icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 0H8m8 0h1a2 2 0 012 2v8a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2h1',
-        active: isActive('/bookings'),
+        active: isActive('/service-records') || isActive('/operations'),
+        allowed: Boolean(resolvedTenantNav.value?.operations),
     },
     {
         href: '/clients',
         label: 'Clients',
         icon: 'M17 20h5v-1a4 4 0 00-5-3.87M9 20H4v-1a4 4 0 015-3.87m8-6.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a3 3 0 11-6 0 3 3 0 016 0zM6 10a3 3 0 11-6 0 3 3 0 016 0z',
         active: isActive('/clients'),
+        allowed: Boolean(resolvedTenantNav.value?.clients),
     },
     {
         href: '/reports',
         label: 'Reports',
         icon: 'M11 3v18m-4-4v4m8-10v10m4-14v14',
         active: isActive('/reports'),
+        allowed: Boolean(resolvedTenantNav.value?.reports),
     },
-]);
+].filter((item) => item.allowed));
 
 const adminNav = computed(() => [
     {
         href: '/admin/schemas',
-        label: 'Schemas',
+        label: 'Schema Vectors',
         icon: 'M12 2L2 7l10 5 10-5-10-5zm0 9L2 6m10 14l10-5m-10 5v-9',
         active: isActive('/admin/schemas'),
+        allowed: Boolean(resolvedTenantNav.value?.schemas),
     },
     {
         href: '/admin/documents',
         label: 'Documents',
         icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
         active: isActive('/admin/documents'),
+        allowed: Boolean(resolvedTenantNav.value?.documents),
     },
-]);
+].filter((item) => item.allowed));
 
 function normalizeHex(hex) {
     const value = String(hex || '').trim();

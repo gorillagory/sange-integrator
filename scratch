@@ -1,0 +1,44 @@
+Now lets enhance The Docoment building .We have several issues
+
+-[object%20Object]:1  GET http://bt.bayam.test:8080/admin/documents/1/[object%20Object] 404 (Not Found)
+Image
+patchDOMProp @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:7690
+patchProp @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:7766
+mountElement @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5346
+processElement @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5325
+patch @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5271
+patchBlockChildren @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5438
+patchElement @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5405
+processElement @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5330
+patch @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5271
+patchBlockChildren @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5438
+patchElement @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5405
+processElement @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5330
+patch @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5271
+componentUpdateFn @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5592
+run @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:408
+runIfDirty @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:435
+callWithErrorHandling @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:1872
+flushJobs @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:2021
+Promise.then
+queueFlush @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:1963
+queueJob @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:1959
+effect.scheduler @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:5609
+trigger @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:428
+endBatch @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:478
+trigger @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:783
+set @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:1030
+(anonymous) @ Inspector.vue:180
+(anonymous) @ vue.runtime.esm-bundler-Bia3U4FO.js?v=f9d7a5b1:8343
+-No Toast porompting the user the template is edited
+-Lets add save and Exit and save buttons(Document building is tiring)
+-cannot scroll down inspector tab
+-copy key doesnt work.Might make sense to put smart mapping(data tab )on always visible so wa can copy directly.
+
+-template code Must be generated automatically
+
+-PDF preview and preview mode is wrong.And the builders doesnt reflect the actual looks on the PDF.
+-See how wrong the Header,Row and everything?the builders should looks the same as the Built.at least on preview.
+-We're building on the sheet thats will be printed later with selected Size(A4,A5,Portrait Landscape Etc2)
+
+_recheck and Reanalyzed the whole builders.Try to make it as sensible for user as we could.The design(Looks) are flawles,but the UX is bad.

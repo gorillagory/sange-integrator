@@ -220,7 +220,7 @@ const brand700 = computed(() => darkenHex(brand500.value, 0.22));
 const brand50 = computed(() => tintHex(brand500.value, 0.92));
 
 const quickLinks = computed(() => [
-    { href: '/bookings', label: 'Bookings' },
+    { href: '/service-records', label: 'Service Records' },
     { href: '/clients', label: 'Clients' },
     { href: '/reports', label: 'Reports' },
     { href: '/profile', label: 'Profile' },
@@ -233,7 +233,7 @@ const metrics = computed(() => [
         icon: 'M13 10V3L4 14h7v7l9-11h-7z',
     },
     {
-        title: 'Open Bookings',
+        title: 'Open Service Records',
         value: '128',
         icon: 'M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z',
     },
@@ -251,9 +251,9 @@ const metrics = computed(() => [
 
 const modules = computed(() => [
     {
-        href: '/bookings',
-        title: 'Bookings',
-        description: 'Create, manage, and invoice booking records.',
+        href: '/service-records',
+        title: 'Service Records',
+        description: 'Capture dynamic service records, payloads, and routing data.',
     },
     {
         href: '/clients',
@@ -262,7 +262,7 @@ const modules = computed(() => [
     },
     {
         href: '/admin/schemas',
-        title: 'Schemas',
+        title: 'Schema Vectors',
         description: 'Maintain service schemas and configuration vectors.',
     },
     {

@@ -74,7 +74,7 @@
                             Registration
                         </div>
                         <div class="mt-1 text-slate-200">
-                            {{ company.registration_number || '—' }}
+                            {{ company.registration_number || '-' }}
                         </div>
                     </div>
 
@@ -96,6 +96,23 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                <button
+                    type="button"
+                    class="inline-flex items-center rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white"
+                    @click="$emit('edit-company', company)"
+                >
+                    Edit Company
+                </button>
+
+                <button
+                    v-if="company.main_group_company?.id"
+                    type="button"
+                    class="inline-flex items-center rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white"
+                    @click="$emit('edit-group', company.main_group_company.id)"
+                >
+                    Edit Group
+                </button>
+
                 <a
                     :href="company.vault_url"
                     target="_blank"
@@ -125,7 +142,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(['visit-link']);
+defineEmits(['visit-link', 'edit-company', 'edit-group']);
 
 const companyInitial = (props.company.name || 'C').charAt(0).toUpperCase();
 

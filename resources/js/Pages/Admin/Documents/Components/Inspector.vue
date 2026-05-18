@@ -1,5 +1,5 @@
 <template>
-    <div class="flex h-full flex-col bg-white">
+    <div class="flex h-full min-h-0 flex-col bg-white">
         <div class="border-b border-slate-200 p-4">
             <div class="flex items-center justify-between gap-3">
                 <div>
@@ -39,6 +39,7 @@
                     <div>
                         <label class="field-label">Page Size</label>
                         <select v-model="activeNode.size" class="control" @change="$emit('update')">
+                            <option value="A5">A5</option>
                             <option value="A4">A4</option>
                             <option value="Letter">Letter</option>
                             <option value="Legal">Legal</option>
@@ -56,6 +57,19 @@
                     <div>
                         <label class="field-label">Margins</label>
                         <input v-model="activeNode.margins" type="text" class="control" placeholder="10mm" @input="$emit('update')">
+                    </div>
+
+                    <div>
+                        <label class="field-label">Document Font</label>
+                        <select v-model="activeNode.fontFamily" class="control" @change="$emit('update')">
+                            <option
+                                v-for="option in fontOptions"
+                                :key="option.value"
+                                :value="option.value"
+                            >
+                                {{ option.label }}
+                            </option>
+                        </select>
                     </div>
 
                     <div>
@@ -293,6 +307,20 @@
                             </div>
 
                             <div v-if="supportsTextStyles">
+                                <label class="field-label">Font Family</label>
+                                <select v-model="activeNode.styles.fontFamily" class="control" @change="$emit('update')">
+                                    <option value="">Use document default</option>
+                                    <option
+                                        v-for="option in fontOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div v-if="supportsTextStyles">
                                 <label class="field-label">Font Size</label>
                                 <input v-model="activeNode.styles.fontSize" type="text" class="control" placeholder="12px" @input="$emit('update')">
                             </div>
@@ -384,6 +412,10 @@ const props = defineProps({
         type: String,
         default: 'invoice',
     },
+    fontOptions: {
+        type: Array,
+        default: () => [],
+    },
     dictionary: {
         type: Object,
         default: () => ({}),
@@ -406,13 +438,13 @@ const title = computed(() => {
     }
 
     if (isPage.value) {
-        return 'Document Page';
+        return 'Document Sheet';
     }
 
     return `${String(props.activeNode.type || 'block').toUpperCase()} Block`;
 });
 
-const supportsTextStyles = computed(() => ['text', 'list'].includes(props.activeNode?.type));
+const supportsTextStyles = computed(() => ['text', 'list', 'table'].includes(props.activeNode?.type));
 const supportsHeight = computed(() => ['spacer', 'divider'].includes(props.activeNode?.type));
 
 const arrayVariables = computed(() => {

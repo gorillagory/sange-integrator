@@ -140,14 +140,23 @@ export function makeBlock(type) {
             return {
                 id: makeId('table'),
                 type: 'table',
-                label: 'Data Table',
-                data_key: '',
+                label: 'Itemized Table',
+                preset: 'invoice_line_items',
+                data_key: 'invoice.line_items',
                 columns: [
-                    { label: 'Column 1', key: '' },
+                    { label: 'Item Description', key: 'description' },
+                    { label: 'Unit', key: 'unit' },
+                    { label: 'Qty', key: 'quantity' },
+                    { label: 'PPU', key: 'unit_price' },
+                    { label: 'Total', key: 'total' },
                 ],
                 styles: {
                     width: '100%',
-                    marginTop: '10px',
+                    marginTop: '14px',
+                    color: '#0f172a',
+                    fontSize: '12px',
+                    padding: '0px',
+                    backgroundColor: 'transparent',
                 },
             };
 

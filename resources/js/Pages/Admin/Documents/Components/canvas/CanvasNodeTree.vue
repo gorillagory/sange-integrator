@@ -99,20 +99,23 @@ function selectNode(event) {
 
 <style scoped>
 .node-shell {
-    border: 1px solid rgb(226 232 240);
-    border-radius: 1rem;
-    background: white;
-    padding: 0.75rem;
+    position: relative;
+    border: 1px solid transparent;
+    border-radius: 0.9rem;
+    background: transparent;
+    padding: 0.35rem;
     transition: 0.15s ease;
 }
 
 .node-shell:hover {
-    border-color: rgb(148 163 184);
+    border-color: rgba(148, 163, 184, 0.5);
+    background: rgba(255, 255, 255, 0.45);
 }
 
 .node-selected {
     border-color: var(--brand-500);
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+    background: rgba(255, 255, 255, 0.78);
 }
 
 .node-toolbar {
@@ -120,7 +123,7 @@ function selectNode(event) {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin-bottom: 0.55rem;
+    margin-bottom: 0.45rem;
 }
 
 .node-tool-btn {

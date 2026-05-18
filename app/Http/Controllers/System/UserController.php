@@ -8,6 +8,7 @@ use App\Http\Requests\System\UpdateUserRequest;
 use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,8 @@ class UserController extends Controller
                         ->orWhere('id', $search);
                 });
             })
-            ->orderBy('name')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString()
             ->through(function (User $user) {
@@ -93,6 +95,11 @@ class UserController extends Controller
                 user: $user,
                 memberships: $request->validated('memberships', [])
             );
+
+            AuditEngine::log('USER_ADMIN', 'USER.ACCESS_CREATED', [
+                'global_roles' => $this->getUserGlobalRoles($user),
+                'memberships' => $this->getUserMembershipPayload($user),
+            ], [], $user);
         });
 
         return redirect()
@@ -104,6 +111,8 @@ class UserController extends Controller
     {
         DB::connection('control')->transaction(function () use ($request, $user) {
             $this->ensureBaseRolesExist();
+            $beforeGlobalRoles = $this->getUserGlobalRoles($user);
+            $beforeMemberships = $this->getUserMembershipPayload($user);
 
             $payload = [
                 'name' => $request->validated('name'),
@@ -125,6 +134,14 @@ class UserController extends Controller
                 user: $user,
                 memberships: $request->validated('memberships', [])
             );
+
+            AuditEngine::log('USER_ADMIN', 'USER.ACCESS_UPDATED', [
+                'global_roles' => $this->getUserGlobalRoles($user),
+                'memberships' => $this->getUserMembershipPayload($user),
+            ], [
+                'global_roles' => $beforeGlobalRoles,
+                'memberships' => $beforeMemberships,
+            ], $user);
         });
 
         return redirect()

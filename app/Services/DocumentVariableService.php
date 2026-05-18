@@ -99,6 +99,21 @@ class DocumentVariableService
     {
         return [
             [
+                'key' => 'service_record.reference_no',
+                'description' => 'Service record reference number',
+                'example' => 'SRV-202605-AB123',
+            ],
+            [
+                'key' => 'service_record.service_group_key',
+                'description' => 'Service group identity for this captured service record',
+                'example' => 'travel.services',
+            ],
+            [
+                'key' => 'service_record.document_no',
+                'description' => 'Canonical document number attached to this service record',
+                'example' => 'DOC-2026-001',
+            ],
+            [
                 'key' => 'invoice.number',
                 'description' => 'System-generated invoice ID',
                 'example' => 'INV-2026-001',
@@ -135,10 +150,16 @@ class DocumentVariableService
                 'is_array' => true,
                 'children' => [
                     ['key' => 'description', 'description' => 'Service name'],
+                    ['key' => 'unit', 'description' => 'Unit label such as pax, night, or ticket'],
                     ['key' => 'quantity', 'description' => 'Qty billed'],
                     ['key' => 'unit_price', 'description' => 'Unit cost'],
                     ['key' => 'total', 'description' => 'Row total'],
                 ],
+            ],
+            [
+                'key' => 'finance.formatted_grand_total',
+                'description' => 'Formatted total from the service record finance payload',
+                'example' => 'RM 1,060.00',
             ],
         ];
     }
@@ -199,6 +220,7 @@ class DocumentVariableService
                 'is_array' => true,
                 'children' => [
                     ['key' => 'description', 'description' => 'Service name'],
+                    ['key' => 'unit', 'description' => 'Unit label such as pax, night, or ticket'],
                     ['key' => 'quantity', 'description' => 'Estimated quantity'],
                     ['key' => 'unit_price', 'description' => 'Unit cost'],
                     ['key' => 'total', 'description' => 'Estimated total'],
@@ -211,47 +233,47 @@ class DocumentVariableService
     {
         return [
             [
-                'key' => 'booking.reference',
-                'description' => 'Booking reference',
-                'example' => 'BKG-88992',
+                'key' => 'service_record.reference',
+                'description' => 'Service record reference number',
+                'example' => 'SRV-88992',
             ],
             [
-                'key' => 'booking.start_date',
-                'description' => 'Trip start date',
+                'key' => 'service_record.start_date',
+                'description' => 'Service record start date',
                 'example' => '10 Dec 2026',
             ],
             [
-                'key' => 'booking.end_date',
-                'description' => 'Trip end date',
+                'key' => 'service_record.end_date',
+                'description' => 'Service record end date',
                 'example' => '24 Dec 2026',
             ],
             [
-                'key' => 'booking.pax_count',
-                'description' => 'Passenger count',
-                'example' => '4',
+                'key' => 'service_record.status',
+                'description' => 'Current service record status',
+                'example' => 'Draft',
             ],
             [
-                'key' => 'booking.passengers',
-                'description' => 'ARRAY: Passenger details',
+                'key' => 'service_rows',
+                'description' => 'ARRAY: Canonical service record rows',
                 'example' => '[Loop Target]',
                 'is_array' => true,
                 'children' => [
-                    ['key' => 'passenger.full_name', 'description' => 'Full name'],
-                    ['key' => 'passenger.passport', 'description' => 'Passport number'],
-                    ['key' => 'passenger.type', 'description' => 'Adult / Child / Infant'],
+                    ['key' => 'service.title', 'description' => 'Service title'],
+                    ['key' => 'service.date', 'description' => 'Captured service date'],
+                    ['key' => 'service.details', 'description' => 'Flattened service summary'],
+                    ['key' => 'fields', 'description' => 'Schema-driven operational fields'],
+                    ['key' => 'finance.line_total', 'description' => 'Formatted line total'],
                 ],
             ],
             [
-                'key' => 'booking.services',
-                'description' => 'ARRAY: Itinerary items',
+                'key' => 'schema_vectors',
+                'description' => 'ARRAY: Schema vector identities tied to the service record rows',
                 'example' => '[Loop Target]',
                 'is_array' => true,
                 'children' => [
-                    ['key' => 'service.date', 'description' => 'Service date'],
-                    ['key' => 'service.time', 'description' => 'Service time'],
-                    ['key' => 'service.title', 'description' => 'Service title'],
-                    ['key' => 'service.details', 'description' => 'Service details'],
-                    ['key' => 'service.confirmation', 'description' => 'Confirmation number'],
+                    ['key' => 'service_code', 'description' => 'Schema vector code'],
+                    ['key' => 'service_name', 'description' => 'Schema vector display name'],
+                    ['key' => 'version', 'description' => 'Schema vector version used at capture time'],
                 ],
             ],
         ];

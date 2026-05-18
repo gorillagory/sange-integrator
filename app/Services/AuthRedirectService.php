@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\User;
+use App\Support\AppHost;
 use Illuminate\Http\Request;
 
 class AuthRedirectService
@@ -95,76 +96,26 @@ class AuthRedirectService
 
     public function systemDashboardUrl(): string
     {
-        return $this->absoluteUrl(
-            host: 'sys.'.$this->baseDomain(),
-            path: '/dashboard'
-        );
+        return AppHost::absoluteUrl(AppHost::systemHost(), '/dashboard');
     }
 
     public function tenantDashboardUrlForCompany(Company $company): string
     {
-        return $this->absoluteUrl(
-            host: $company->subdomain.'.'.$this->baseDomain(),
-            path: '/dashboard'
-        );
+        return AppHost::absoluteUrl(AppHost::tenantHost($company->subdomain), '/dashboard');
     }
 
     private function isSystemHost(string $host): bool
     {
-        return $host === 'sys.'.$this->baseDomain();
+        return AppHost::isSystemHost($host);
     }
 
     private function isRootHost(string $host): bool
     {
-        return in_array($host, [
-            $this->baseDomain(),
-            'www.'.$this->baseDomain(),
-        ], true);
+        return AppHost::isRootHost($host);
     }
 
     private function extractSubdomain(string $host): ?string
     {
-        $baseDomain = $this->baseDomain();
-
-        if (! str_ends_with($host, '.'.$baseDomain)) {
-            return null;
-        }
-
-        $subdomain = substr($host, 0, -1 * (strlen($baseDomain) + 1));
-
-        if ($subdomain === '' || in_array($subdomain, ['www', 'sys'], true)) {
-            return null;
-        }
-
-        return $subdomain;
-    }
-
-    private function absoluteUrl(string $host, string $path): string
-    {
-        $appUrl = rtrim((string) config('app.url', 'http://bayam.test:8000'), '/');
-        $parts = parse_url($appUrl);
-
-        $scheme = $parts['scheme'] ?? 'http';
-        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
-
-        return "{$scheme}://{$host}{$port}{$path}";
-    }
-
-    private function baseDomain(): string
-    {
-        $appUrl = rtrim((string) config('app.url', 'http://bayam.test:8000'), '/');
-        $parts = parse_url($appUrl);
-
-        $host = $parts['host'] ?? 'bayam.test';
-
-        if (str_starts_with($host, 'sys.')) {
-            return substr($host, 4);
-        }
-
-        if (str_starts_with($host, 'www.')) {
-            return substr($host, 4);
-        }
-
-        return $host;
+        return AppHost::extractSubdomain($host);
     }
 }

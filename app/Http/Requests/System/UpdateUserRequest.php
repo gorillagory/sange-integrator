@@ -34,7 +34,7 @@ class UpdateUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
-                'email:rfc,dns',
+                'email',
                 'max:255',
                 Rule::unique('control.users', 'email')->ignore($userId),
             ],
@@ -66,9 +66,10 @@ class UpdateUserRequest extends FormRequest
             }
 
             $isSuperAdmin = in_array('super_admin', $globalRoles, true);
+            $isSystemAdmin = in_array('system_admin', $globalRoles, true);
 
-            if (! $isSuperAdmin && empty($memberships)) {
-                $validator->errors()->add('memberships', 'At least one company membership is required for non-super users.');
+            if (! $isSuperAdmin && ! $isSystemAdmin && empty($memberships)) {
+                $validator->errors()->add('memberships', 'At least one company membership is required unless user is a system-level admin.');
             }
 
             foreach ($memberships as $index => $membership) {

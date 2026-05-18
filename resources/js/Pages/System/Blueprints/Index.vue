@@ -5,13 +5,20 @@
             <div class="flex justify-between items-center mb-8">
                 <div>
                     <h2 class="text-3xl font-bold text-white">The Blueprint Forge</h2>
-                    <p class="text-sm text-gray-400 mt-1">Manage dynamic JSON schemas and operational modules for tenants.</p>
+                    <p class="text-sm text-gray-400 mt-1">Centrally author and govern the master schema vectors used across tenant service records.</p>
                 </div>
 
                 <Link href="/blueprints/create" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition shadow-lg shadow-indigo-500/20 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                    Forge New Blueprint
+                    Forge Master Vector
                 </Link>
+            </div>
+
+            <div class="mb-8 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 px-6 py-4 text-sm text-indigo-100">
+                <div class="font-bold text-white">Single source of truth.</div>
+                <div class="mt-1 text-indigo-100/80">
+                    Tenant schema screens now act as lightweight review surfaces. Structural edits, versioning, and lifecycle changes belong here in Blueprint Forge.
+                </div>
             </div>
 
             <div class="bg-[#1e293b] rounded-2xl border border-white/10 overflow-hidden shadow-xl">
@@ -26,8 +33,9 @@
                     <table class="min-w-full divide-y divide-white/5">
                         <thead class="bg-black/20">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Service / Payload Key</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Schema Vector / Key</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Target Industry</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Lifecycle</th>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Form Architecture</th>
                             <th class="px-6 py-3 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -53,6 +61,15 @@
                             </td>
 
                             <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-xs font-semibold text-white">v{{ schema.version || 1 }}</span>
+                                    <span class="text-[10px] uppercase tracking-[0.18em]" :class="schema.status === 'active' ? 'text-emerald-400' : 'text-amber-300'">
+                                        {{ schema.status || 'draft' }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-2 text-sm text-gray-300">
                                     <span class="font-mono text-emerald-400">{{ schema.schema_payload?.fields?.length || 0 }}</span> Input Fields
                                 </div>
@@ -60,7 +77,7 @@
 
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <Link :href="`/blueprints/${schema.id}/edit`" class="text-indigo-400 hover:text-indigo-300 transition flex inline-flex items-center gap-1 ml-auto">
-                                    Edit Engine <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    Open Forge <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                 </Link>
                             </td>
                         </tr>

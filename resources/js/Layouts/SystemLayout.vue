@@ -28,47 +28,16 @@
 
                     <div class="space-y-2">
                         <Link
-                            href="/dashboard"
+                            v-for="item in systemNavItems"
+                            :key="item.href"
+                            :href="item.href"
                             class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition"
-                            :class="isActive('/dashboard')
+                            :class="isActive(item.href)
                                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40'
                                 : 'text-slate-300 hover:bg-white/5 hover:text-white'"
                         >
-                            <ShellIcon name="dashboard" />
-                            <span>System Pulse</span>
-                        </Link>
-
-                        <Link
-                            href="/companies"
-                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition"
-                            :class="isActive('/companies')
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40'
-                                : 'text-slate-300 hover:bg-white/5 hover:text-white'"
-                        >
-                            <ShellIcon name="companies" />
-                            <span>Genesis Roster</span>
-                        </Link>
-
-                        <Link
-                            href="/blueprints"
-                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition"
-                            :class="isActive('/blueprints')
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40'
-                                : 'text-slate-300 hover:bg-white/5 hover:text-white'"
-                        >
-                            <ShellIcon name="blueprints" />
-                            <span>Blueprint Forge</span>
-                        </Link>
-
-                        <Link
-                            href="/users"
-                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition"
-                            :class="isActive('/users')
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40'
-                                : 'text-slate-300 hover:bg-white/5 hover:text-white'"
-                        >
-                            <ShellIcon name="users" />
-                            <span>Personnel Vault</span>
+                            <ShellIcon :name="item.icon" />
+                            <span>{{ item.label }}</span>
                         </Link>
                     </div>
                 </nav>
@@ -136,7 +105,7 @@
                                         System Workspace
                                     </h1>
                                     <p class="mt-1 text-sm text-slate-400">
-                                        Manage operations from the central control plane.
+                                        Manage service records from the central control plane.
                                     </p>
                                 </div>
                             </slot>
@@ -177,6 +146,30 @@ import { Link, usePage } from '@inertiajs/vue3';
 const page = usePage();
 
 const currentUser = computed(() => page.props?.auth?.user ?? null);
+const rbac = computed(() => page.props?.auth?.rbac ?? {});
+const systemNav = computed(() => rbac.value?.system_nav ?? {});
+
+const resolvedSystemNav = computed(() => {
+    const nav = systemNav.value ?? {};
+    const hasAnyAllowed = Object.values(nav).some((value) => Boolean(value));
+
+    if (hasAnyAllowed) {
+        return nav;
+    }
+
+    if (!currentUser.value) {
+        return nav;
+    }
+
+    // Defensive fallback: never render an empty workspace for authenticated users.
+    return {
+        dashboard: true,
+        companies: true,
+        blueprints: true,
+        users: true,
+        audit_logs: true,
+    };
+});
 
 const isActive = (prefix) => {
     const url = page.url || '';
@@ -195,11 +188,49 @@ const userInitials = computed(() => {
         .join('');
 });
 
+const systemNavItems = computed(() => {
+    const items = [
+        {
+            href: '/dashboard',
+            label: 'System Pulse',
+            icon: 'dashboard',
+            allowed: Boolean(resolvedSystemNav.value?.dashboard),
+        },
+        {
+            href: '/companies',
+            label: 'Genesis Roster',
+            icon: 'companies',
+            allowed: Boolean(resolvedSystemNav.value?.companies),
+        },
+        {
+            href: '/blueprints',
+            label: 'Blueprint Forge',
+            icon: 'blueprints',
+            allowed: Boolean(resolvedSystemNav.value?.blueprints),
+        },
+        {
+            href: '/users',
+            label: 'Personnel Vault',
+            icon: 'users',
+            allowed: Boolean(resolvedSystemNav.value?.users),
+        },
+        {
+            href: '/audit-logs',
+            label: 'Audit Logs',
+            icon: 'logs',
+            allowed: Boolean(resolvedSystemNav.value?.audit_logs),
+        },
+    ];
+
+    return items.filter((item) => item.allowed);
+});
+
 const icons = {
     dashboard: 'M3 12l9-9 9 9M5 10v10h14V10',
     companies: 'M4 21h16M7 21V8h10v13M9 12h2m2 0h2',
     blueprints: 'M4 7l8-4 8 4-8 4-8-4zm0 5l8 4 8-4m-16 5l8 4 8-4',
     users: 'M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2m18 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+    logs: 'M9 17v-6m3 6V7m3 10v-3M4 20h16M5 4h14a1 1 0 0 1 1 1v14H4V5a1 1 0 0 1 1-1z',
 };
 
 const ShellIcon = {

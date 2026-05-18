@@ -1,11 +1,11 @@
 <!-- resources/js/Pages/Admin/Documents/Components/canvas/CanvasRowBlock.vue -->
 <template>
     <div
-        class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-3"
+        class="rounded-2xl border border-dashed border-slate-200/70 bg-transparent p-2"
         :style="rowStyle"
     >
-        <div class="mb-3 flex items-center justify-between gap-3">
-            <div class="text-xs font-semibold text-slate-600">
+        <div class="mb-2 flex items-center justify-between gap-3">
+            <div class="text-[11px] font-semibold text-slate-500">
                 {{ columnCount }} column{{ columnCount === 1 ? '' : 's' }}
             </div>
 

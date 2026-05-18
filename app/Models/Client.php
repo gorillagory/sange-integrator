@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
+    use Auditable;
+
     // 🔒 THE VAULT ANCHOR: This makes it a globally shared resource
     protected $connection = 'control';
 

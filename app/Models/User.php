@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -17,7 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use Auditable, HasFactory, Notifiable, HasRoles;
 
     protected $connection = 'control';
 
@@ -73,9 +74,12 @@ class User extends Authenticatable
         return DB::connection('control')
             ->table('model_has_roles')
             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-            ->where('model_has_roles.model_type', $this->getMorphClass())
+            ->whereIn('model_has_roles.model_type', array_values(array_unique([$this->getMorphClass(), self::class])))
             ->where('model_has_roles.model_id', $this->id)
-            ->where('model_has_roles.company_id', 0)
+            ->where(function ($scope): void {
+                $scope->where('model_has_roles.company_id', 0)
+                    ->orWhereNull('model_has_roles.company_id');
+            })
             ->where('roles.name', $roleName)
             ->exists();
     }

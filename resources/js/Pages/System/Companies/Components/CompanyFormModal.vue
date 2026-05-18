@@ -100,7 +100,7 @@
 
 <script setup>
 import { computed, watch, ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import MainGroupSection from './MainGroupSection.vue';
 import CompanySection from './CompanySection.vue';
 
@@ -289,6 +289,10 @@ const submit = () => {
         onSuccess: () => {
             showDiscardConfirm.value = false;
             emit('close');
+            router.reload({
+                preserveScroll: true,
+                only: ['companies', 'mainGroupCompanies', 'ungroupedCompanies', 'filters', 'metrics'],
+            });
         },
     });
 };

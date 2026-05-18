@@ -2,21 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-class ServiceSchema extends Model
+class ServiceSchema extends SchemaVector
 {
-    // Force this model to ONLY look at the Control DB
-    protected $connection = 'control';
-
     protected $fillable = [
-        'industry', 'service_type', 'display_name', 'schema_payload'
+        'industry',
+        'service_group_key',
+        'service_type',
+        'display_name',
+        'service_code',
+        'service_name',
+        'version',
+        'status',
+        'is_default',
+        'schema_payload',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'schema_payload' => 'array', // Auto-converts JSONB to Array
-        ];
-    }
 }

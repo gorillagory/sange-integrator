@@ -1,7 +1,7 @@
 <!-- resources/js/Pages/Admin/Documents/Components/canvas/CanvasColumnDropZone.vue -->
 <template>
     <div
-        class="rounded-2xl border border-dashed p-3 transition"
+        class="rounded-2xl border border-dashed p-2 transition"
         :class="columnClass"
         @dragover.prevent="builder?.onDragOverColumn?.(rowId, column.id)"
         @dragleave="builder?.onDragLeaveColumn?.(rowId, column.id)"
@@ -25,7 +25,7 @@
             />
         </div>
 
-        <div v-else class="rounded-xl bg-white/80 px-3 py-4 text-center text-xs text-slate-400">
+        <div v-else class="rounded-xl bg-white/60 px-3 py-4 text-center text-xs text-slate-400">
             Drop block or nested row here
         </div>
     </div>
@@ -61,6 +61,6 @@ const columnClass = computed(() => {
 
     return active
         ? 'border-[var(--brand-500)] bg-[rgba(239,68,68,0.06)]'
-        : 'border-slate-300 bg-slate-50';
+        : 'border-slate-200 bg-transparent';
 });
 </script>

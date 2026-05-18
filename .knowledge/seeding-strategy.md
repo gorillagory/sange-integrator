@@ -42,8 +42,10 @@ Companies:
 ## Runbook (Fresh Start with Sail)
 
 ```bash
-./vendor/bin/sail artisan migrate:fresh --seed
+./vendor/bin/sail artisan migrate --path=database/migrations/control --force
+./vendor/bin/sail artisan db:seed --database=control --force
 ./vendor/bin/sail artisan tenant:migrate
+./vendor/bin/sail artisan tenant:seed-document-template bt
 ```
 
 Optional tenant migration for one tenant:
@@ -57,3 +59,4 @@ Optional tenant migration for one tenant:
 - `CompanyModuleSeeder` is idempotent via `updateOrCreate` + `syncWithoutDetaching`.
 - `DocumentTemplateSeeder` now skips cleanly if the table is not present on active connection.
 - Keep all seed commands inside Sail to avoid host PHP version mismatch.
+- Run migration/seed commands sequentially (do not run in parallel), especially for control DB bootstrap.

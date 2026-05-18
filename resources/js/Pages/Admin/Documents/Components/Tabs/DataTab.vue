@@ -106,6 +106,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     activeNode: {
@@ -119,6 +120,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update']);
+const { addToast } = useToast();
 
 const canInsertText = computed(() => props.activeNode?.type === 'text');
 const canAssignArray = computed(() => ['table', 'list'].includes(props.activeNode?.type));
@@ -156,8 +158,25 @@ const assignImageVariable = (key) => {
 const copyVariable = async (key) => {
     try {
         await navigator.clipboard.writeText(key);
+        addToast(`Copied ${key}`, 'success', 2500);
     } catch {
-        // noop
+        const input = document.createElement('textarea');
+        input.value = key;
+        input.setAttribute('readonly', 'readonly');
+        input.style.position = 'absolute';
+        input.style.left = '-9999px';
+        document.body.appendChild(input);
+        input.select();
+
+        const copied = document.execCommand('copy');
+        document.body.removeChild(input);
+
+        if (copied) {
+            addToast(`Copied ${key}`, 'success', 2500);
+            return;
+        }
+
+        addToast('Could not copy this mapping key.', 'error', 3000);
     }
 };
 </script>

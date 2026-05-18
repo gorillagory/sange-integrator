@@ -16,10 +16,17 @@
                         <span class="rounded-full bg-[var(--brand-50)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--brand-700)]">
                             {{ prettyType(form.document_type) }}
                         </span>
+
+                        <span
+                            class="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em]"
+                            :class="isDirty ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'"
+                        >
+                            {{ isDirty ? 'Unsaved Changes' : 'Saved State' }}
+                        </span>
                     </div>
 
                     <p class="mt-1 text-sm text-slate-500">
-                        Left card for tools. Right card for live preview.
+                        Build on the left, then switch to print preview to inspect the real printable sheet.
                     </p>
                 </div>
 
@@ -47,7 +54,7 @@
                         class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                         @click="$emit('toggle-preview-mode')"
                     >
-                        {{ isPreviewMode ? 'Exit Preview' : 'Preview Mode' }}
+                        {{ isPreviewMode ? 'Exit Print Preview' : 'Print Preview' }}
                     </button>
 
                     <button
@@ -61,11 +68,20 @@
 
                     <button
                         type="button"
+                        class="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        :disabled="form.processing"
+                        @click="$emit('save-and-exit')"
+                    >
+                        {{ form.processing ? 'Saving...' : 'Save & Exit' }}
+                    </button>
+
+                    <button
+                        type="button"
                         class="rounded-2xl bg-[var(--brand-600)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                         :disabled="form.processing"
                         @click="$emit('save')"
                     >
-                        {{ form.processing ? 'Saving...' : (isEditing ? 'Save Template' : 'Create Template') }}
+                        {{ form.processing ? 'Saving...' : 'Save' }}
                     </button>
                 </div>
             </div>
@@ -97,6 +113,9 @@
                         placeholder="master_bt_1"
                         @input="$emit('update-code', $event.target.value)"
                     >
+                    <div class="mt-1 text-xs text-slate-500">
+                        Auto-generated from the template name until you edit it manually.
+                    </div>
                     <div v-if="form.errors.code" class="mt-1 text-xs font-medium text-rose-600">
                         {{ form.errors.code }}
                     </div>
@@ -156,6 +175,10 @@ defineProps({
         type: Boolean,
         default: false,
     },
+    isDirty: {
+        type: Boolean,
+        default: false,
+    },
     documentTypes: {
         type: Array,
         default: () => [],
@@ -180,6 +203,7 @@ defineEmits([
     'toggle-preview-mode',
     'open-preview',
     'save',
+    'save-and-exit',
     'update-code',
 ]);
 </script>

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Company;
+use App\Services\AuditEngine;
 use App\Services\AuthRedirectService;
 use Closure;
 use Illuminate\Http\Request;
@@ -51,9 +52,20 @@ class IdentifyTenant
             $redirectService = app(AuthRedirectService::class);
 
             $targetUrl = $redirectService->redirectForDeniedTenantAccess($user, $company);
+            $message = "You do not have security clearance for {$company->name}.";
+            AuditEngine::log('ACCESS', 'TENANT.ACCESS_DENIED', [
+                'attempted_company_id' => $company->id,
+                'attempted_company_subdomain' => $company->subdomain,
+                'redirect_url' => $targetUrl,
+            ], [], $user);
 
-            return redirect($targetUrl)
-                ->with('error', "You do not have security clearance for {$company->name}.");
+            if ($request->header('X-Inertia') && $this->isCrossOriginRedirect($request, $targetUrl)) {
+                $request->session()->flash('error', $message);
+
+                return Inertia::location($targetUrl);
+            }
+
+            return redirect($targetUrl)->with('error', $message);
         }
 
         Config::set('database.connections.tenant.database', $company->db_name);
@@ -63,9 +75,31 @@ class IdentifyTenant
 
         app(PermissionRegistrar::class)->setPermissionsTeamId($company->id);
 
+        app()->instance('currentCompany', $company);
         view()->share('currentCompany', $company);
         Inertia::share('currentCompany', $company);
 
         return $next($request);
+    }
+
+    private function isCrossOriginRedirect(Request $request, string $targetUrl): bool
+    {
+        $target = parse_url($targetUrl);
+
+        if (! is_array($target) || ! isset($target['host'])) {
+            return false;
+        }
+
+        $targetScheme = $target['scheme'] ?? $request->getScheme();
+        $targetHost = $target['host'];
+        $targetPort = $target['port'] ?? null;
+
+        $requestScheme = $request->getScheme();
+        $requestHost = $request->getHost();
+        $requestPort = $request->getPort();
+
+        return $targetScheme !== $requestScheme
+            || $targetHost !== $requestHost
+            || ($targetPort !== null && $targetPort !== $requestPort);
     }
 }

@@ -2,7 +2,7 @@
     <TenantLayout>
         <template #breadcrumbs>
             <Breadcrumbs :items="[
-                { label: 'Operations', url: null },
+                { label: 'Service Records', url: null },
                 { label: 'Corporate Directory', url: '/clients' }
             ]" />
         </template>

@@ -29,7 +29,7 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email:rfc,dns', 'max:255', 'unique:control.users,email'],
+            'email' => ['required', 'email', 'max:255', 'unique:control.users,email'],
             'password' => ['required', 'confirmed', Password::defaults()],
 
             'global_roles' => ['nullable', 'array'],
@@ -58,9 +58,10 @@ class StoreUserRequest extends FormRequest
             }
 
             $isSuperAdmin = in_array('super_admin', $globalRoles, true);
+            $isSystemAdmin = in_array('system_admin', $globalRoles, true);
 
-            if (! $isSuperAdmin && empty($memberships)) {
-                $validator->errors()->add('memberships', 'At least one company membership is required for non-super users.');
+            if (! $isSuperAdmin && ! $isSystemAdmin && empty($memberships)) {
+                $validator->errors()->add('memberships', 'At least one company membership is required unless user is a system-level admin.');
             }
 
             foreach ($memberships as $index => $membership) {

@@ -1,65 +1,142 @@
 # Data Model
 
-This project separates data into two logical zones:
+Last updated: 2026-05-15
 
-- Control DB (`control` connection, fixed database: `sange_control`)
-- Tenant DB (`tenant` connection, database name set at runtime)
+## Modeling Direction
 
-## Control DB Tables
+The application is moving toward a **dynamic capture model**.
 
-Control migrations live under `database/migrations/control`.
+That means:
 
-1. `users`
-- Auth identities
+1. operational data is captured through vectors/schemas
+2. runtime records store structured payloads plus identity/version context
+3. domain-specific analytics models come later through extraction/projection
 
-2. `companies` (`Schema::connection('control')`)
-- Tenant directory with domain + database mapping
+So the main question is not:
 
-3. `company_user` (`Schema::connection('control')`)
-- User-company membership and tenant-level role marker
+- “what fixed table should this field belong to?”
 
-4. Module and platform metadata
+The main question is:
+
+- “what vector defines this data, and where should the payload snapshot live?”
+
+## Database Zones
+
+### Control DB
+
+Connection: `control`  
+Database: `sange_control`
+
+Purpose:
+- identity
+- tenant registry
+- memberships
+- module enablement
+- schema/vector governance
+- global/shared metadata
+
+Key tables:
+- `users`
+- `companies`
+- `company_user`
 - `modules`
-- `company_module` (module enablement per company)
+- `company_module`
 - `service_schemas`
 - `global_clients`
-- `flights`
 - `main_group_companies`
 - `audit_logs`
+- permission tables
+- Laravel infrastructure tables
 
-5. Permission tables (control side)
-- Spatie permission migration is present under control migrations
+### Tenant DB
 
-6. Laravel infrastructure tables
-- `password_reset_tokens`
-- `sessions`
-- `cache`
-- `cache_locks`
-- `jobs`
-- `job_batches`
-- `failed_jobs`
+Connection: `tenant`  
+Database: resolved dynamically from active company
 
-## Tenant DB Tables
+Purpose:
+- operational capture
+- document storage
+- local workflow records
+- client contracts
 
-Tenant migrations are split by domain under `database/migrations/tenant`.
-
-Shared tenant tables:
-- `contracts` (+ company id extension)
+Key tables:
+- `contracts`
 - `document_templates`
+- `operations`
+- `service_instances`
 
-Travel tenant tables:
-- `bookings`
-- `passengers`
-- `booking_services`
-- `invoice_template`
-- booking upgrade migration (`upgrade_booking_module_table`)
+## Current Operational Pattern
 
-## Relationship Summary
+### Envelope Record
 
-- `users` <-> `companies` is many-to-many via `company_user`.
-- Each `companies` row points to a dedicated physical tenant DB via `db_name`.
-- Tenant route access can be gated by enabled modules (`company_module` mapping).
+`operations` now acts as the workflow/commercial envelope:
 
-## Important Assumption
+- client
+- contract
+- status
+- invoice state
+- aggregate totals
 
-Any command touching application data should run through Sail to avoid host PHP/version drift.
+This kind of parent record can continue to exist where useful, but it should remain lightweight.
+
+### Service Instance Record
+
+`service_instances` is the more important runtime concept.
+
+It should be treated as the operational truth holder:
+
+- vector/schema identity
+- schema version
+- governed service payload
+- extra payload
+- pricing fields
+- totals
+- snapshots
+
+In broader platform terms, this is the pattern to preserve:
+
+- one parent operation can contain one or more vector-driven service instances
+- the service instance is the dynamic record that matters most
+
+## Dynamic Payload Contract
+
+Service-instance records should keep enough structure to be replayable and interpretable later.
+
+Core fields:
+
+- `service_schema_id`
+- `service_code`
+- `schema_version`
+- `service_name`
+- `service_details`
+- `service_details_extra`
+- pricing fields
+- `payload_snapshot`
+
+## Deprecated / De-emphasized Thinking
+
+The platform should avoid overcommitting to domain-specific child tables too early.
+
+Examples:
+
+- passenger tables
+- patient-specific runtime tables
+- service-specific micro-models created only to mirror vector fields
+
+Those can become downstream projections later if analytics or operational tooling truly needs them.
+
+## Projection Principle
+
+Analytics and specialized business panels should be built from extracted payloads, not by forcing runtime storage into rigid domain models too early.
+
+This means:
+
+1. runtime storage stays vector-first
+2. analytics can build proper reporting models later
+3. AI-assisted panels can classify, group, enrich, and summarize dynamic payloads downstream
+
+## Practical Rule
+
+If a new field only exists because one operational vector needs it, it should usually live in the service payload.
+
+If many workflows later require normalized querying/reporting on the same concept, then create a projection or materialized model later.

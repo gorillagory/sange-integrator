@@ -24,3 +24,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 pbund/
+deepseek-conf.YAML
+deepseek-conf.yaml
+.continue/config.local.yaml
+.env.ai

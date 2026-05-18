@@ -1,58 +1,91 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# sange-integrator
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Multi-tenant Laravel 13 + Inertia/Vue platform for system administration and tenant operations.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Backend: Laravel 13, PHP 8.3+, PostgreSQL
+- Frontend: Inertia.js, Vue 3, Vite, Tailwind CSS v4
+- Auth/RBAC: Laravel auth scaffolding + Spatie Permission with teams
+- Runtime: Laravel Sail preferred for local development
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Architecture Summary
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Control domain: `sys.bayam.test`
+- Tenant domains: `{subdomain}.bayam.test`
+- Control database: `sange_control`
+- Tenant databases: one database per company, selected dynamically from `companies.db_name`
+- System users, RBAC, companies, and governance data live in control
+- Contracts live in tenant/shared scope
+- Operations and travel service capture live in tenant/travel scope
 
-## Learning Laravel
+## Local Hostnames
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Add these to local hosts/DNS and point them to `127.0.0.1`:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- `bayam.test`
+- `sys.bayam.test`
+- `bner.bayam.test`
+- `bt.bayam.test`
+- `enterprise.bayam.test`
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Expected `.env` Baseline
 
-## Agentic Development
+Use these values as the local default:
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```dotenv
+APP_URL=http://bayam.test:8080
+SESSION_DOMAIN=.bayam.test
+DB_CONNECTION=control
+DB_DATABASE=sange_control
+FORWARD_DB_PORT=5433
+APP_PORT=8080
+VITE_PORT=5174
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Notes:
 
-## Contributing
+1. `DB_CONNECTION=control` is intentional. The app reads control data from the fixed `sange_control` database.
+2. Tenant runtime switches to the correct tenant database at request time through middleware.
+3. Prefer running framework commands through Sail to avoid host PHP version drift.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Local Setup
 
-## Code of Conduct
+```bash
+cp .env.example .env
+composer install
+npm install
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan migrate --path=database/migrations/control --force
+./vendor/bin/sail artisan db:seed --database=control --force
+./vendor/bin/sail artisan tenant:migrate
+./vendor/bin/sail artisan tenant:seed-document-template bt
+./vendor/bin/sail npm run dev -- --host 0.0.0.0
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Local URLs
 
-## Security Vulnerabilities
+- App login: `http://bayam.test:8080/login`
+- System workspace: `http://sys.bayam.test:8080`
+- Tenant workspace example: `http://bt.bayam.test:8080`
+- Vite dev server: `http://localhost:5174`
+- Postgres forwarded port: `5433`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Route Model
 
-## License
+- System routes: company management, user management, blueprints, audit logs
+- Tenant routes: bookings, clients, contracts, reports
+- Tenant admin routes: schema builder and document builder
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Release Flow
+
+Promotion path:
+
+`feature branch -> pr -> staging -> production -> main`
+
+## Reference Docs
+
+- Canonical setup runbook: `.knowledge/setup-process.md`
+- Route and access map: `.knowledge/routes-and-user-flows.md`
+- Project tracker: `.knowledge/project-tracker.md`
+- Workflow SOP: `.knowledge/workflow-sop.md`

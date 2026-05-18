@@ -1,0 +1,20 @@
+name: Sange Integrator AI
+version: 0.0.1
+schema: v1
+
+models:
+  - name: DeepSeek Chat
+    provider: deepseek
+    model: deepseek-chat
+    apiKey: ${DEEPSEEK_API_KEY}
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: DeepSeek Reasoner
+    provider: deepseek
+    model: deepseek-reasoner
+    apiKey: ${DEEPSEEK_API_KEY}
+    roles:
+      - chat

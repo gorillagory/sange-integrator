@@ -11,26 +11,28 @@ class PdfCompilerService
     ) {
     }
 
-    public function compileToHtml(DocumentTemplate $template, array $dataPayload = []): string
+    public function compileToHtml(DocumentTemplate $template, array $dataPayload = [], array $options = []): string
     {
         $vector = $this->layoutService->normalize($template->layout_vector);
+        $renderMode = $options['render_mode'] ?? 'pdf';
 
         $page = $vector['page'] ?? [];
         $header = $vector['header'] ?? [];
         $body = $vector['body'] ?? [];
         $footer = $vector['footer'] ?? [];
 
-        $pageStyles = $this->generatePageStyles($page);
-        $headerHtml = $this->compileNodes($header, $dataPayload);
-        $bodyHtml = $this->compileNodes($body, $dataPayload);
-        $footerHtml = $this->compileNodes($footer, $dataPayload);
+        $pageStyles = $this->generatePageStyles($page, $renderMode);
+        $headerHtml = $this->compileNodes($header, $dataPayload, $options);
+        $bodyHtml = $this->compileNodes($body, $dataPayload, $options);
+        $footerHtml = $this->compileNodes($footer, $dataPayload, $options);
 
-        return $this->wrapInMasterTemplate($pageStyles, $headerHtml, $bodyHtml, $footerHtml, $page);
+        return $this->wrapInMasterTemplate($pageStyles, $headerHtml, $bodyHtml, $footerHtml, $page, $renderMode);
     }
 
-    private function compileNodes(array $nodes, array $dataPayload): string
+    private function compileNodes(array $nodes, array $dataPayload, array $options = []): string
     {
         $html = '';
+        $renderMode = $options['render_mode'] ?? 'pdf';
 
         foreach ($nodes as $node) {
             if (! is_array($node)) {
@@ -38,7 +40,7 @@ class PdfCompilerService
             }
 
             $type = $node['type'] ?? 'unknown';
-            $styles = $this->cssArrayToString($node['styles'] ?? []);
+            $styles = $this->cssArrayToString($node['styles'] ?? [], $renderMode);
 
             switch ($type) {
                 case 'row':
@@ -49,7 +51,7 @@ class PdfCompilerService
                         $width = round(($span / 12) * 100, 2).'%';
 
                         $html .= '<td style="width: '.$width.'; vertical-align: top; padding: 0; margin: 0;">';
-                        $html .= $this->compileNodes($col['blocks'] ?? [], $dataPayload);
+                        $html .= $this->compileNodes($col['blocks'] ?? [], $dataPayload, $options);
                         $html .= '</td>';
                     }
 
@@ -76,7 +78,7 @@ class PdfCompilerService
                     break;
 
                 case 'image':
-                    $url = $this->resolveImageSource($node, $dataPayload);
+                    $url = $this->resolveImageSource($node, $dataPayload, $options);
 
                     $html .= '<div style="width: 100%;">';
 
@@ -93,7 +95,7 @@ class PdfCompilerService
                     break;
 
                 case 'table':
-                    $html .= $this->compileTable($node, $dataPayload);
+                    $html .= $this->compileTable($node, $dataPayload, $renderMode);
                     break;
 
                 case 'page_break':
@@ -105,9 +107,13 @@ class PdfCompilerService
         return $html;
     }
 
-    private function compileTable(array $node, array $dataPayload): string
+    private function compileTable(array $node, array $dataPayload, string $renderMode = 'pdf'): string
     {
-        $styles = $this->cssArrayToString($node['styles'] ?? []);
+        if (($node['preset'] ?? '') === 'invoice_line_items') {
+            return $this->compileInvoiceLineItemsTable($node, $dataPayload, $renderMode);
+        }
+
+        $styles = $this->cssArrayToString($node['styles'] ?? [], $renderMode);
         $columns = is_array($node['columns'] ?? null) ? $node['columns'] : [];
         $dataKey = (string) ($node['data_key'] ?? '');
 
@@ -147,6 +153,64 @@ class PdfCompilerService
         return $html;
     }
 
+    private function compileInvoiceLineItemsTable(array $node, array $dataPayload, string $renderMode = 'pdf'): string
+    {
+        $styles = $this->cssArrayToString($node['styles'] ?? [], $renderMode);
+        $columns = is_array($node['columns'] ?? null) ? $node['columns'] : [];
+        $dataKey = (string) ($node['data_key'] ?? 'invoice.line_items');
+
+        $loopData = data_get($dataPayload, $dataKey, []);
+        $loopData = is_array($loopData) ? $loopData : [];
+        $summary = $this->resolveTableSummary($dataKey, $dataPayload);
+
+        $html = '<div style="width: 100%; '.$styles.'">';
+        $html .= '<table style="width: 100%; border-collapse: collapse; table-layout: fixed;">';
+        $html .= '<thead><tr>';
+
+        foreach ($columns as $col) {
+            $key = (string) ($col['key'] ?? '');
+            $label = $this->escape((string) ($col['label'] ?? 'Column'));
+            $width = $this->invoiceTableColumnWidth($key);
+            $align = $this->invoiceTableColumnAlign($key);
+            $padding = $key === 'description' ? '0 16px 10px 0' : '0 0 10px 0';
+
+            $html .= '<th style="width: '.$width.'; border-bottom: 1px solid #cbd5e1; padding: '.$padding.'; text-align: '.$align.'; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #64748b;">'.$label.'</th>';
+        }
+
+        $html .= '</tr></thead><tbody>';
+
+        if ($loopData === []) {
+            $html .= '<tr><td colspan="'.max(1, count($columns)).'" style="padding: 12px 0; text-align: center; color: #94a3b8; font-size: 11px;">No items yet</td></tr>';
+        } else {
+            foreach ($loopData as $row) {
+                $html .= '<tr>';
+
+                foreach ($columns as $col) {
+                    $key = (string) ($col['key'] ?? '');
+                    $cellValue = data_get($row, $key, '');
+                    $align = $this->invoiceTableColumnAlign($key);
+                    $padding = $key === 'description' ? '12px 16px 12px 0' : '12px 0';
+                    $fontWeight = $key === 'description' ? '600' : '400';
+                    $color = $key === 'description' ? '#0f172a' : '#334155';
+
+                    $html .= '<td style="border-bottom: 1px solid #e2e8f0; padding: '.$padding.'; vertical-align: top; text-align: '.$align.'; font-size: 12px; font-weight: '.$fontWeight.'; color: '.$color.';">'.$this->renderCellValue($cellValue).'</td>';
+                }
+
+                $html .= '</tr>';
+            }
+        }
+
+        $html .= '</tbody></table>';
+        $html .= '<div style="margin-top: 14px; width: 100%; text-align: right;">';
+        $html .= '<table style="width: 260px; margin-left: auto; border-collapse: collapse;">';
+        $html .= '<tr><td style="padding: 4px 0; font-size: 12px; color: #475569;">Subtotal</td><td style="padding: 4px 0; font-size: 12px; font-weight: 600; color: #0f172a; text-align: right;">'.$this->escape((string) $summary['subtotal']).'</td></tr>';
+        $html .= '<tr><td style="padding: 4px 0; font-size: 12px; color: #475569;">Tax</td><td style="padding: 4px 0; font-size: 12px; font-weight: 600; color: #0f172a; text-align: right;">'.$this->escape((string) $summary['tax_total']).'</td></tr>';
+        $html .= '<tr><td style="padding: 10px 0 0; border-top: 1px solid #cbd5e1; font-size: 14px; font-weight: 700; color: #0f172a;">Grand Total</td><td style="padding: 10px 0 0; border-top: 1px solid #cbd5e1; font-size: 14px; font-weight: 700; color: #0f172a; text-align: right;">'.$this->escape((string) $summary['grand_total']).'</td></tr>';
+        $html .= '</table></div></div>';
+
+        return $html;
+    }
+
     private function resolveTextContent(array $node, array $dataPayload): string
     {
         $content = (string) ($node['content'] ?? '');
@@ -166,13 +230,25 @@ class PdfCompilerService
         }, $content) ?? $content;
     }
 
-    private function resolveImageSource(array $node, array $dataPayload): string
+    private function resolveImageSource(array $node, array $dataPayload, array $options = []): string
     {
+        $assetMode = $options['asset_mode'] ?? 'pdf';
+
         if (($node['source_mode'] ?? 'static') === 'dynamic' && ! empty($node['data_key'])) {
             $dynamicValue = data_get($dataPayload, (string) $node['data_key']);
 
             if (is_string($dynamicValue) && $dynamicValue !== '') {
-                return $dynamicValue;
+                return $this->normalizeResolvedImageSource($dynamicValue, $assetMode);
+            }
+
+            if (is_array($dynamicValue)) {
+                foreach (['logo_url', 'url', 'asset_path'] as $candidate) {
+                    $candidateValue = $dynamicValue[$candidate] ?? null;
+
+                    if (is_string($candidateValue) && $candidateValue !== '') {
+                        return $this->normalizeResolvedImageSource($candidateValue, $assetMode);
+                    }
+                }
             }
         }
 
@@ -181,6 +257,12 @@ class PdfCompilerService
         if ($assetPath !== '') {
             if (str_starts_with($assetPath, 'http://') || str_starts_with($assetPath, 'https://') || str_starts_with($assetPath, 'data:')) {
                 return $assetPath;
+            }
+
+            if ($assetMode === 'browser') {
+                return str_starts_with($assetPath, '/storage/')
+                    ? $assetPath
+                    : '/storage/'.ltrim(str_replace('storage/', '', $assetPath), '/');
             }
 
             if (str_starts_with($assetPath, '/storage/')) {
@@ -215,7 +297,43 @@ class PdfCompilerService
         return strip_tags($value, '<strong><b><em><i><u><br><span>');
     }
 
-    private function cssArrayToString(array $styles): string
+    private function resolveTableSummary(string $dataKey, array $dataPayload): array
+    {
+        $rootPath = str_ends_with($dataKey, '.line_items')
+            ? substr($dataKey, 0, -1 * strlen('.line_items'))
+            : '';
+
+        $subtotal = $rootPath !== '' ? data_get($dataPayload, $rootPath.'.subtotal') : null;
+        $taxTotal = $rootPath !== '' ? data_get($dataPayload, $rootPath.'.tax_total') : null;
+        $grandTotal = $rootPath !== '' ? data_get($dataPayload, $rootPath.'.grand_total') : null;
+
+        return [
+            'subtotal' => is_scalar($subtotal) ? (string) $subtotal : (string) (data_get($dataPayload, 'finance.formatted_subtotal', '') ?: ''),
+            'tax_total' => is_scalar($taxTotal) ? (string) $taxTotal : (string) (data_get($dataPayload, 'finance.formatted_tax_total', '') ?: ''),
+            'grand_total' => is_scalar($grandTotal) ? (string) $grandTotal : (string) (data_get($dataPayload, 'finance.formatted_grand_total', '') ?: ''),
+        ];
+    }
+
+    private function invoiceTableColumnWidth(string $key): string
+    {
+        return match ($key) {
+            'description' => '42%',
+            'unit' => '12%',
+            'quantity' => '10%',
+            'unit_price' => '18%',
+            'total' => '18%',
+            default => 'auto',
+        };
+    }
+
+    private function invoiceTableColumnAlign(string $key): string
+    {
+        return in_array($key, ['quantity', 'unit_price', 'total'], true)
+            ? 'right'
+            : 'left';
+    }
+
+    private function cssArrayToString(array $styles, string $renderMode = 'pdf'): string
     {
         $css = '';
 
@@ -225,18 +343,23 @@ class PdfCompilerService
             }
 
             $kebabKey = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', (string) $key));
-            $css .= $kebabKey.': '.$this->escapeAttribute((string) $value).'; ';
+            $resolvedValue = $key === 'fontFamily'
+                ? $this->resolveFontFamily((string) $value, $renderMode)
+                : (string) $value;
+
+            $css .= $kebabKey.': '.$this->escapeAttribute($resolvedValue).'; ';
         }
 
         return $css;
     }
 
-    private function generatePageStyles(array $page): string
+    private function generatePageStyles(array $page, string $renderMode = 'pdf'): string
     {
         $margins = $this->escapeAttribute((string) ($page['margins'] ?? '20mm'));
         $bg = $this->escapeAttribute((string) ($page['backgroundColor'] ?? '#ffffff'));
         $size = $this->escapeAttribute((string) ($page['size'] ?? 'A4'));
         $orientation = $this->escapeAttribute((string) ($page['orientation'] ?? 'portrait'));
+        $fontFamily = $this->escapeAttribute($this->resolveFontFamily((string) ($page['fontFamily'] ?? config('documents.default_font', 'sans')), $renderMode));
 
         return "
             @page {
@@ -247,16 +370,17 @@ class PdfCompilerService
                 background-color: {$bg};
                 margin: 0;
                 padding: 0;
-                font-family: Helvetica, Arial, sans-serif;
+                font-family: {$fontFamily};
                 font-size: 12px;
                 color: #333333;
             }
         ";
     }
 
-    private function wrapInMasterTemplate(string $pageStyles, string $header, string $body, string $footer, array $page): string
+    private function wrapInMasterTemplate(string $pageStyles, string $header, string $body, string $footer, array $page, string $renderMode = 'pdf'): string
     {
         $watermark = '';
+        $contentHeight = $this->resolvePrintableContentHeight($page);
 
         if (! empty($page['watermarkText'])) {
             $text = $this->escape((string) $page['watermarkText']);
@@ -274,9 +398,29 @@ class PdfCompilerService
             <title>Compiled Document</title>
             <style>
                 {$pageStyles}
-                header { position: fixed; top: 0; left: 0; right: 0; }
-                footer { position: fixed; bottom: 0; left: 0; right: 0; }
-                main { position: relative; width: 100%; }
+                html, body { height: 100%; }
+                .document-shell {
+                    min-height: {$contentHeight};
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                }
+                .document-header,
+                .document-main,
+                .document-footer {
+                    width: 100%;
+                }
+                .document-header {
+                    flex: 0 0 auto;
+                }
+                .document-main {
+                    flex: 1 0 auto;
+                    min-height: 0;
+                }
+                .document-footer {
+                    flex: 0 0 auto;
+                    margin-top: auto;
+                }
                 .watermark {
                     position: fixed;
                     top: 40%;
@@ -292,12 +436,60 @@ class PdfCompilerService
         </head>
         <body>
             {$watermark}
-            <header>{$header}</header>
-            <footer>{$footer}</footer>
-            <main>{$body}</main>
+            <div class="document-shell" data-render-mode="{$this->escapeAttribute($renderMode)}">
+                <div class="document-header">{$header}</div>
+                <main class="document-main">{$body}</main>
+                <div class="document-footer">{$footer}</div>
+            </div>
         </body>
         </html>
         HTML;
+    }
+
+    private function resolvePrintableContentHeight(array $page): string
+    {
+        [$width, $height] = $this->resolvePageSizeMm(
+            (string) ($page['size'] ?? 'A4'),
+            (string) ($page['orientation'] ?? 'portrait')
+        );
+
+        $verticalMargins = $this->resolveVerticalMarginExpression((string) ($page['margins'] ?? '20mm'));
+
+        return 'calc('.$height.' - ('.$verticalMargins.'))';
+    }
+
+    private function resolvePageSizeMm(string $size, string $orientation): array
+    {
+        $normalizedSize = strtoupper(trim($size));
+        $dimensions = match ($normalizedSize) {
+            'A5' => ['148mm', '210mm'],
+            'LETTER' => ['215.9mm', '279.4mm'],
+            'LEGAL' => ['215.9mm', '355.6mm'],
+            default => ['210mm', '297mm'],
+        };
+
+        if (strtolower(trim($orientation)) === 'landscape') {
+            return [$dimensions[1], $dimensions[0]];
+        }
+
+        return $dimensions;
+    }
+
+    private function resolveVerticalMarginExpression(string $margins): string
+    {
+        $parts = preg_split('/\s+/', trim($margins)) ?: [];
+        $parts = array_values(array_filter($parts, fn ($part) => $part !== ''));
+
+        if ($parts === []) {
+            return '40mm';
+        }
+
+        return match (count($parts)) {
+            1 => $parts[0].' + '.$parts[0],
+            2 => $parts[0].' + '.$parts[0],
+            3 => $parts[0].' + '.$parts[2],
+            default => $parts[0].' + '.$parts[2],
+        };
     }
 
     private function safeNl2Br(string $value): string
@@ -313,5 +505,37 @@ class PdfCompilerService
     private function escapeAttribute(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    private function normalizeResolvedImageSource(string $value, string $assetMode): string
+    {
+        if ($value === '' || str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, 'data:')) {
+            return $value;
+        }
+
+        if ($assetMode === 'browser') {
+            return str_starts_with($value, '/storage/')
+                ? $value
+                : '/storage/'.ltrim(str_replace('storage/', '', $value), '/');
+        }
+
+        if (str_starts_with($value, '/storage/')) {
+            return public_path(ltrim($value, '/'));
+        }
+
+        return public_path('storage/'.ltrim(str_replace('storage/', '', $value), '/'));
+    }
+
+    private function resolveFontFamily(string $value, string $renderMode): string
+    {
+        foreach (config('documents.font_presets', []) as $preset) {
+            if (($preset['value'] ?? null) === $value) {
+                return (string) ($renderMode === 'browser'
+                    ? ($preset['css_family'] ?? 'Helvetica, Arial, sans-serif')
+                    : ($preset['pdf_family'] ?? 'Helvetica'));
+            }
+        }
+
+        return $value !== '' ? $value : ($renderMode === 'browser' ? 'Helvetica, Arial, sans-serif' : 'Helvetica');
     }
 }

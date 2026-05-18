@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Services\DocumentTemplateLayoutService;
 use App\Services\DocumentVariableService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -24,7 +25,24 @@ class UpdateDocumentTemplateRequest extends FormRequest
             'code' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('document_templates', 'code')->ignore($id)],
             'document_type' => ['required', 'string', Rule::in(DocumentVariableService::supportedDocumentTypes())],
             'layout_vector' => ['required', 'array'],
+            'exit_after_save' => ['sometimes', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $name = trim((string) $this->input('name', ''));
+        $code = trim((string) $this->input('code', ''));
+
+        if ($code === '' && $name !== '') {
+            $code = $this->generateCodeFromName($name);
+        }
+
+        $this->merge([
+            'name' => $name,
+            'code' => $code,
+            'exit_after_save' => $this->boolean('exit_after_save'),
+        ]);
     }
 
     public function withValidator(Validator $validator): void
@@ -43,5 +61,17 @@ class UpdateDocumentTemplateRequest extends FormRequest
                 $validator->errors()->add('layout_vector', $error);
             }
         });
+    }
+
+    private function generateCodeFromName(string $name): string
+    {
+        $normalized = Str::of($name)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9_-]+/', '_')
+            ->replaceMatches('/_+/', '_')
+            ->trim('_')
+            ->value();
+
+        return $normalized;
     }
 }

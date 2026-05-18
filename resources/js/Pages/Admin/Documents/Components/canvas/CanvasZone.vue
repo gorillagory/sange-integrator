@@ -77,7 +77,7 @@ const zoneClass = computed(() => {
 
 <style scoped>
 .zone-label {
-    padding: 0.85rem 1rem;
+    padding: 0.5rem 0;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
@@ -87,7 +87,7 @@ const zoneClass = computed(() => {
 }
 
 .zone-area {
-    padding: 1rem;
+    padding: 0.6rem 0 1rem;
     transition: 0.15s ease;
 }
 
@@ -100,8 +100,8 @@ const zoneClass = computed(() => {
 .empty-zone {
     border: 1px dashed rgb(203 213 225);
     border-radius: 1rem;
-    background: rgb(248 250 252);
-    padding: 1rem;
+    background: rgba(248, 250, 252, 0.75);
+    padding: 1rem 1.25rem;
     text-align: center;
     font-size: 0.8rem;
     color: rgb(148 163 184);

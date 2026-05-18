@@ -239,6 +239,7 @@ export function useDocumentEngine(form) {
         resolveListItems: bindings.resolveListItems,
         resolveTableRows: bindings.resolveTableRows,
         resolveTableColumns: bindings.resolveTableColumns,
+        resolveTableSummary: bindings.resolveTableSummary,
         resolveImage: bindings.resolveImage,
         resolveBlockValue: bindings.resolveBlockValue,
     });
@@ -268,6 +269,7 @@ export function useDocumentEngine(form) {
         resolveListItems: bindings.resolveListItems,
         resolveTableRows: bindings.resolveTableRows,
         resolveTableColumns: bindings.resolveTableColumns,
+        resolveTableSummary: bindings.resolveTableSummary,
         resolveImage: bindings.resolveImage,
         resolveBlockValue: bindings.resolveBlockValue,
     };

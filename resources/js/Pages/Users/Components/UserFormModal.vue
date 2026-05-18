@@ -190,7 +190,7 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import MembershipEditor from './MembershipEditor.vue';
 
 const props = defineProps({
@@ -362,7 +362,13 @@ const submit = () => {
     if (isEdit.value && props.user?.id) {
         form.transform(() => payload()).put(`/users/${props.user.id}`, {
             preserveScroll: true,
-            onSuccess: () => emit('close'),
+            onSuccess: () => {
+                emit('close');
+                router.reload({
+                    preserveScroll: true,
+                    only: ['users', 'filters', 'companies', 'globalRoles', 'tenantRoles'],
+                });
+            },
         });
 
         return;
@@ -370,7 +376,13 @@ const submit = () => {
 
     form.transform(() => payload()).post('/users', {
         preserveScroll: true,
-        onSuccess: () => emit('close'),
+        onSuccess: () => {
+            emit('close');
+            router.reload({
+                preserveScroll: true,
+                only: ['users', 'filters', 'companies', 'globalRoles', 'tenantRoles'],
+            });
+        },
     });
 };
 </script>

@@ -3,93 +3,132 @@
         <template #breadcrumbs>
             <Breadcrumbs :items="[
                 { label: 'Admin Settings', url: null },
-                { label: 'Service Vectors', url: null }
+                { label: 'Schema Manager', url: null }
             ]" />
         </template>
 
-        <div class="mb-8 flex justify-between items-end">
+        <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            <div class="font-bold">Tenant schema access is intentionally lightweight.</div>
+            <div class="mt-1 text-amber-800">
+                Structure design, versioning, and blueprint changes are governed centrally in Blueprint Forge.
+                This screen is for reviewing what is available to your team today.
+            </div>
+        </div>
+
+        <div class="mb-8 flex items-end justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Service Vectors</h1>
-                <p class="text-sm text-gray-500 mt-1">Manage dynamic operational schemas for cross-industry bookings.</p>
+                <h1 class="text-2xl font-bold text-gray-900">Schema Vector Manager</h1>
+                <p class="mt-1 text-sm text-gray-500">
+                    Review centrally forged schema vectors for your industry before using them in service records.
+                </p>
             </div>
-            <Link href="/admin/schemas/create" class="px-5 py-2.5 bg-[var(--brand-600)] hover:bg-[var(--brand-500)] text-white text-sm font-bold rounded-xl transition shadow flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                Create New Vector
-            </Link>
+            <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-right shadow-sm">
+                <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Published Vectors</div>
+                <div class="mt-1 text-2xl font-black text-[var(--brand-700)]">{{ schemas.length }}</div>
+            </div>
         </div>
 
-        <div v-if="schemas.length === 0" class="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
-            <h3 class="text-lg font-bold text-gray-900">No Vectors Found</h3>
-            <p class="text-sm text-gray-500 mt-1 mb-6">You have not deployed any service vectors yet.</p>
-            <Link href="/admin/schemas/create" class="text-sm font-bold text-[var(--brand-600)]">Start Building &rarr;</Link>
+        <div v-if="schemas.length === 0" class="rounded-2xl border border-gray-200 bg-white p-12 text-center shadow-sm">
+            <h3 class="text-lg font-bold text-gray-900">No schema vectors are available yet</h3>
+            <p class="mx-auto mt-2 max-w-2xl text-sm text-gray-500">
+                Your tenant can only use vectors that have already been forged centrally for this industry.
+                Ask the platform team to publish a new vector if you need a new structure.
+            </p>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-            <div v-for="schema in schemas" :key="schema.id" class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition group relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--brand-400)] to-[var(--brand-600)] opacity-0 group-hover:opacity-100 transition"></div>
-                <div class="flex justify-between items-start mb-4">
+        <div v-else class="grid grid-cols-1 gap-6 pb-12 md:grid-cols-2 xl:grid-cols-3">
+            <div
+                v-for="schema in schemas"
+                :key="schema.id"
+                class="overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            >
+                <div class="flex items-start justify-between gap-4">
                     <div>
-                        <h3 class="font-bold text-lg text-gray-900">{{ schema.display_name }}</h3>
-                        <span class="text-[10px] font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ schema.service_type }}</span>
+                        <h3 class="text-lg font-bold text-gray-900">{{ schema.service_name || schema.display_name }}</h3>
+                        <div class="mt-1 text-[11px] font-mono text-gray-500">
+                            {{ schema.service_code || schema.service_type }}
+                        </div>
                     </div>
-                    <span class="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-1 rounded uppercase tracking-wider">{{ schema.industry }}</span>
+                    <span
+                        class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em]"
+                        :class="statusClasses(schema.status)"
+                    >
+                        {{ schema.status || 'draft' }}
+                    </span>
                 </div>
 
-                <div class="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-6 flex justify-between items-center">
-                    <span class="text-xs font-bold text-gray-500 uppercase">Data Attributes</span>
-                    <span class="text-sm font-black text-[var(--brand-600)]">{{ getFieldCount(schema.schema_payload) }} Nodes</span>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Version</div>
+                        <div class="mt-1 text-sm font-bold text-gray-900">v{{ schema.version || 1 }}</div>
+                    </div>
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Default</div>
+                        <div class="mt-1 text-sm font-bold" :class="schema.is_default ? 'text-emerald-700' : 'text-gray-500'">
+                            {{ schema.is_default ? 'Primary' : 'Secondary' }}
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Industry</div>
+                        <div class="mt-1 text-sm font-bold text-gray-900">{{ schema.industry }}</div>
+                    </div>
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Fields</div>
+                        <div class="mt-1 text-sm font-bold text-[var(--brand-700)]">{{ getFieldCount(schema.schema_payload) }}</div>
+                    </div>
                 </div>
 
-                <div class="flex gap-2">
-                    <Link :href="`/admin/schemas/${schema.id}/edit`" class="flex-1 flex justify-center items-center bg-gray-50 hover:bg-[var(--brand-50)] text-gray-700 text-xs font-bold py-2 rounded-lg transition border border-gray-200">
-                        Edit Vector
+                <div class="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Practical Note</div>
+                    <p class="mt-2 text-sm text-gray-600">
+                        Use this vector as a governed contract in service records. Structural changes belong in Blueprint Forge.
+                    </p>
+                </div>
+
+                <div class="mt-5">
+                    <Link
+                        :href="`/admin/schemas/${schema.id}/edit`"
+                        class="inline-flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 transition hover:border-[var(--brand-300)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
+                    >
+                        Review Vector
                     </Link>
-                    <button @click="confirmDeletion(schema)" class="px-3 bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-200 rounded-lg transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
                 </div>
             </div>
         </div>
-
-        <ConfirmationModal
-            :show="deleteState.isOpen"
-            title="Delete Service Vector?"
-            :message="`Are you sure you want to delete '${deleteState.activeSchema?.display_name}'? This action cannot be undone.`"
-            @close="deleteState.isOpen = false"
-            @confirm="performDelete"
-        />
-
-        <GlobalToast />
     </TenantLayout>
 </template>
 
 <script setup>
-import { reactive } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import TenantLayout from '../../../Layouts/TenantLayout.vue';
 import Breadcrumbs from '../../../Components/UI/Breadcrumbs.vue';
-import ConfirmationModal from '../../../Components/UI/ConfirmationModal.vue';
-import GlobalToast from '../../../Components/GlobalToast.vue';
 
-defineProps({ schemas: Array });
-
-const deleteState = reactive({ isOpen: false, activeSchema: null });
+defineProps({
+    schemas: {
+        type: Array,
+        default: () => [],
+    },
+});
 
 const getFieldCount = (payload) => {
     try {
         const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
-        return parsed.fields?.length || 0;
-    } catch (e) { return 0; }
+        return parsed?.fields?.length || 0;
+    } catch (error) {
+        return 0;
+    }
 };
 
-const confirmDeletion = (schema) => {
-    deleteState.activeSchema = schema;
-    deleteState.isOpen = true;
-};
-
-const performDelete = () => {
-    router.delete(`/admin/schemas/${deleteState.activeSchema.id}`, {
-        onSuccess: () => { deleteState.isOpen = false; }
-    });
+const statusClasses = (status) => {
+    switch ((status || '').toLowerCase()) {
+        case 'active':
+            return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+        case 'deprecated':
+            return 'bg-amber-50 text-amber-700 border border-amber-200';
+        case 'archived':
+            return 'bg-gray-100 text-gray-600 border border-gray-200';
+        default:
+            return 'bg-sky-50 text-sky-700 border border-sky-200';
+    }
 };
 </script>

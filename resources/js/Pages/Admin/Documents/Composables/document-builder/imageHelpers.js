@@ -13,10 +13,10 @@ export function resolveImageSource(node, payload = {}) {
     }
 
     if (isDynamicImageNode(node)) {
-        return resolvePath(payload, node.data_key) || '';
+        return normalizeImageSource(resolvePath(payload, node.data_key));
     }
 
-    return node.asset_path || node.url || '';
+    return normalizeImageSource(node.asset_path) || normalizeImageSource(node.url);
 }
 
 export function hasImageSource(node, payload = {}) {
@@ -38,4 +38,26 @@ export function resolvePath(source, path) {
 
             return carry[segment];
         }, source);
+}
+
+function normalizeImageSource(value) {
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    if (value && typeof value === 'object') {
+        if (typeof value.logo_url === 'string') {
+            return value.logo_url;
+        }
+
+        if (typeof value.url === 'string') {
+            return value.url;
+        }
+
+        if (typeof value.asset_path === 'string') {
+            return value.asset_path;
+        }
+    }
+
+    return '';
 }
