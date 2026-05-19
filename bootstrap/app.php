@@ -6,9 +6,11 @@ use App\Http\Middleware\AllowSuperAdminOrTenantRole;
 use App\Http\Middleware\EnsureCompanyModuleEnabled;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveSessionDomain;
+use App\Support\AppHost;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -21,6 +23,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(
+            fn (Request $request) => AppHost::absoluteUrlForRequest(
+                $request,
+                $request->getHost(),
+                '/login',
+            )
+        );
+
         $middleware->web(prepend: [
             ResolveSessionDomain::class,
         ]);

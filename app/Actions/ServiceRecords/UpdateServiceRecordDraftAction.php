@@ -8,16 +8,15 @@ use App\Models\ServiceRecord;
 use App\Models\ServiceRecordRow;
 use App\Services\Handlers\HandlerRegistry;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
-class CreateServiceRecordAction
+class UpdateServiceRecordDraftAction
 {
     public function __construct(
         private readonly HandlerRegistry $handlers,
     ) {
     }
 
-    public function execute(array $validated, Company $company): ServiceRecord
+    public function execute(ServiceRecord $serviceRecord, array $validated, Company $company): ServiceRecord
     {
         $serviceGroup = $this->handlers->resolve($validated['service_group_key'] ?? null, $company);
         $vectors = SchemaVector::query()
@@ -31,19 +30,17 @@ class CreateServiceRecordAction
         $vectorsById = $vectors->keyBy('id');
         $vectorsByCode = $vectors->keyBy(fn (SchemaVector $vector) => $vector->service_code ?: $vector->service_type);
 
-        return DB::connection('tenant')->transaction(function () use ($validated, $company, $vectorsById, $vectorsByCode, $serviceGroup) {
-            $referenceNo = 'SRV-' . date('Ym') . '-' . strtoupper(Str::random(5));
+        return DB::connection('tenant')->transaction(function () use ($serviceRecord, $validated, $company, $vectorsById, $vectorsByCode, $serviceGroup) {
             $totalAmount = 0;
 
-            $serviceRecord = ServiceRecord::query()->create([
-                'company_id' => $company->id,
-                'reference_no' => $referenceNo,
+            $serviceRecord->rows()->delete();
+
+            $serviceRecord->update([
                 'service_group_key' => $serviceGroup->key(),
                 'client_id' => $validated['client_id'],
                 'contract_no' => $validated['contract_no'],
                 'client_remark_preset_id' => $validated['client_remark_preset_id'] ?? null,
                 'remarks' => $validated['remarks'] ?? null,
-                'total_amount' => 0,
                 'status' => 'Draft',
             ]);
 
@@ -144,7 +141,7 @@ class CreateServiceRecordAction
                 'total_amount' => $totalAmount,
             ]);
 
-            return $serviceRecord->fresh(['client', 'rows.schemaVector']);
+            return $serviceRecord->fresh(['client', 'clientRemarkPreset', 'rows.schemaVector']);
         });
     }
 

@@ -61,14 +61,11 @@
                 @update="touch"
             />
         </div>
-
-        <GlobalToast />
     </TenantLayout>
 </template>
 
 <script setup>
 import { usePage } from '@inertiajs/vue3';
-import GlobalToast from '@/Components/GlobalToast.vue';
 import TenantLayout from '@/Layouts/TenantLayout.vue';
 import BuilderHeader from './Components/BuilderHeader.vue';
 import BuilderPreviewPane from './Components/BuilderPreviewPane.vue';

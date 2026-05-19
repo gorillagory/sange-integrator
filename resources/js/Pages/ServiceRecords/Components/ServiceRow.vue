@@ -1,26 +1,83 @@
 <template>
     <div
         class="rounded-2xl border shadow-sm transition-all duration-300"
-        :class="isEditing ? 'border-[var(--brand-200)] bg-white ring-4 ring-blue-50/50' : 'border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:shadow-md'"
+        :class="cardClasses"
     >
         <div v-if="isEditing" class="relative p-6">
-            <button
-                type="button"
-                class="absolute right-6 top-6 text-gray-400 transition hover:text-red-500"
-                title="Remove Service Row"
-                @click.prevent="$emit('remove')"
-            >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-            </button>
+            <div class="absolute right-6 top-6 flex items-center gap-2">
+                <span
+                    class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em]"
+                    :class="hasErrors ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'"
+                >
+                    {{ hasErrors ? 'Needs Attention' : 'Ready' }}
+                </span>
 
-            <h4 class="mb-6 mr-8 flex items-center gap-2 border-b border-gray-100 pb-3 text-sm font-bold uppercase text-[var(--brand-700)]">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                {{ schemaName }}
-            </h4>
+                <button
+                    type="button"
+                    class="text-gray-400 transition hover:text-slate-600"
+                    title="Save and minimize"
+                    @click.prevent="saveAndMinimize"
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
+
+                <button
+                    type="button"
+                    class="text-gray-400 transition hover:text-red-500"
+                    title="Remove Service Row"
+                    @click.prevent="$emit('remove')"
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-6 mr-24 flex flex-wrap items-start gap-3 border-b border-gray-100 pb-3">
+                <div>
+                    <h4 class="flex items-center gap-2 text-sm font-bold uppercase text-[var(--brand-700)]">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        {{ schemaName }}
+                    </h4>
+                    <div class="mt-1 flex flex-wrap gap-2 text-[11px] text-gray-500">
+                        <span class="rounded-full bg-gray-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-gray-600">
+                            {{ item.service_code }}
+                        </span>
+                        <span v-if="pricingUnits.length" class="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-blue-700">
+                            {{ pricingUnits.length }} unit option<span v-if="pricingUnits.length !== 1">s</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div
+                    v-if="hasErrors"
+                    class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+                >
+                    {{ validationCount }} field<span v-if="validationCount !== 1">s</span> still need attention.
+                </div>
+            </div>
+
+            <div
+                v-if="resolutionError"
+                class="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+            >
+                <div class="font-bold">Row source needs refresh</div>
+                <div class="mt-1">{{ resolutionError }}</div>
+            </div>
+
+            <div
+                v-if="filteredErrorList.length"
+                class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            >
+                <div class="font-bold">Finish these before you submit:</div>
+                <ul class="mt-2 space-y-1">
+                    <li v-for="error in filteredErrorList" :key="error">• {{ error }}</li>
+                </ul>
+            </div>
 
             <div class="mb-8 grid grid-cols-1 gap-5 md:grid-cols-2">
                 <div
@@ -31,7 +88,7 @@
                     <label class="mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase text-gray-500">
                         <span>
                             {{ field.label }}
-                            <span v-if="field.rules.includes('required')" class="text-red-500">*</span>
+                            <span v-if="fieldIsRequired(field)" class="text-red-500">*</span>
                         </span>
 
                         <span
@@ -47,8 +104,9 @@
                             v-if="field.ui_component === 'textarea'"
                             v-model="item.service_details[field.key]"
                             rows="3"
-                            :required="field.rules.includes('required')"
-                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm transition-colors focus:border-[var(--brand-500)] focus:bg-white focus:ring-[var(--brand-500)]"
+                            :required="fieldIsRequired(field)"
+                            class="w-full rounded-lg px-4 py-2.5 text-sm transition-colors focus:bg-white"
+                            :class="inputClasses(fieldError(field.key))"
                             :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
                             :placeholder="field.placeholder || 'Enter details...'"
                         />
@@ -56,8 +114,9 @@
                         <select
                             v-else-if="field.ui_component === 'select' && field.options.length"
                             v-model="item.service_details[field.key]"
-                            :required="field.rules.includes('required')"
-                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm transition-colors focus:border-[var(--brand-500)] focus:bg-white focus:ring-[var(--brand-500)]"
+                            :required="fieldIsRequired(field)"
+                            class="w-full rounded-lg px-4 py-2.5 text-sm transition-colors focus:bg-white"
+                            :class="inputClasses(fieldError(field.key))"
                         >
                             <option :value="''" disabled>
                                 Select {{ field.label.toLowerCase() }}...
@@ -74,8 +133,9 @@
                         <input
                             v-else-if="field.ui_component === 'file'"
                             type="file"
-                            :required="field.rules.includes('required')"
-                            class="block w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-500 transition-colors file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2.5 file:text-xs file:font-bold file:text-[var(--brand-700)] hover:file:bg-[var(--brand-100)]"
+                            :required="fieldIsRequired(field)"
+                            class="block w-full cursor-pointer rounded-lg border bg-gray-50 text-sm text-gray-500 transition-colors file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2.5 file:text-xs file:font-bold file:text-[var(--brand-700)] hover:file:bg-[var(--brand-100)]"
+                            :class="fieldError(field.key) ? 'border-amber-300 bg-amber-50/70' : 'border-gray-200'"
                             @change="onFileChange($event, field.key)"
                         >
 
@@ -83,15 +143,16 @@
                             v-else
                             v-model="item.service_details[field.key]"
                             :type="getHtmlInputType(field.type, field.ui_component)"
-                            :required="field.rules.includes('required')"
-                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm transition-colors focus:border-[var(--brand-500)] focus:bg-white focus:ring-[var(--brand-500)]"
+                            :required="fieldIsRequired(field)"
+                            class="w-full rounded-lg px-4 py-2.5 text-sm transition-colors focus:bg-white"
+                            :class="inputClasses(fieldError(field.key))"
                             :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
                             :placeholder="field.placeholder || `Enter ${field.label}...`"
                         >
                     </template>
 
                     <template v-else>
-                        <div class="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        <div class="space-y-2 rounded-xl border p-3" :class="fieldError(field.key) ? 'border-amber-300 bg-amber-50/70' : 'border-gray-200 bg-gray-50'">
                             <div
                                 v-for="(line, lineIndex) in item.service_details[field.key]"
                                 :key="lineIndex"
@@ -101,8 +162,9 @@
                                     v-if="field.ui_component === 'textarea'"
                                     v-model="item.service_details[field.key][lineIndex]"
                                     rows="2"
-                                    :required="field.rules.includes('required') && lineIndex === 0"
-                                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]"
+                                    :required="fieldIsRequired(field) && lineIndex === 0"
+                                    class="w-full rounded-lg border bg-white px-3 py-2 text-sm shadow-sm"
+                                    :class="inputClasses(fieldError(field.key))"
                                     :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
                                     :placeholder="`${field.placeholder || field.label} ${lineIndex + 1}`"
                                 />
@@ -111,8 +173,9 @@
                                     v-else
                                     v-model="item.service_details[field.key][lineIndex]"
                                     :type="getHtmlInputType(field.type, field.ui_component)"
-                                    :required="field.rules.includes('required') && lineIndex === 0"
-                                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]"
+                                    :required="fieldIsRequired(field) && lineIndex === 0"
+                                    class="w-full rounded-lg border bg-white px-3 py-2 text-sm shadow-sm"
+                                    :class="inputClasses(fieldError(field.key))"
                                     :style="{ textTransform: field.text_transform === 'none' ? 'none' : field.text_transform }"
                                     :placeholder="`${field.placeholder || field.label} ${lineIndex + 1}`"
                                 >
@@ -142,6 +205,10 @@
                             </button>
                         </div>
                     </template>
+
+                    <p v-if="fieldError(field.key)" class="mt-1.5 text-xs font-medium text-amber-700">
+                        {{ fieldError(field.key) }}
+                    </p>
                 </div>
             </div>
 
@@ -152,18 +219,47 @@
                         v-model.number="item.qty"
                         type="number"
                         min="1"
-                        class="w-full rounded-lg border border-gray-300 bg-white px-2 py-2.5 text-center text-sm font-bold focus:border-[var(--brand-500)]"
+                        class="w-full rounded-lg px-2 py-2.5 text-center text-sm font-bold"
+                        :class="inputClasses(commercialError('qty'))"
                     >
+                    <p v-if="commercialError('qty')" class="mt-1.5 text-xs font-medium text-amber-700">{{ commercialError('qty') }}</p>
                 </div>
 
                 <div class="md:col-span-2">
                     <label class="mb-1.5 block text-[10px] font-bold uppercase text-gray-500">Unit</label>
-                    <input
-                        v-model="item.unit_name"
-                        type="text"
-                        class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium focus:border-[var(--brand-500)]"
-                        placeholder="ticket, room, pax"
-                    >
+                    <div class="relative">
+                        <input
+                            v-model="item.unit_name"
+                            type="text"
+                            class="w-full rounded-lg px-3 py-2.5 text-sm font-medium"
+                            :class="inputClasses(commercialError('unit_name'))"
+                            :placeholder="pricingUnits.length ? 'Type to search schema units...' : 'ticket, room, pax'"
+                            @focus="unitSuggestionsOpen = true"
+                            @input="unitSuggestionsOpen = true"
+                            @blur="closeUnitSuggestions"
+                        >
+
+                        <div
+                            v-if="unitSuggestionsOpen && filteredUnitSuggestions.length"
+                            class="absolute z-20 mt-2 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
+                        >
+                            <button
+                                v-for="unit in filteredUnitSuggestions"
+                                :key="unit"
+                                type="button"
+                                class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-[var(--brand-50)] hover:text-[var(--brand-700)]"
+                                @mousedown.prevent="selectUnitSuggestion(unit)"
+                            >
+                                <span class="font-semibold">{{ unit }}</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wide text-gray-400">Suggested</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <p v-if="pricingUnits.length" class="mt-1.5 text-[10px] font-medium text-gray-500">
+                        Suggested by schema vector: {{ pricingUnits.join(', ') }}
+                    </p>
+                    <p v-if="commercialError('unit_name')" class="mt-1.5 text-xs font-medium text-amber-700">{{ commercialError('unit_name') }}</p>
                 </div>
 
                 <div class="md:col-span-2">
@@ -174,10 +270,12 @@
                             v-model.number="item.base_cost"
                             type="number"
                             step="0.01"
-                            class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-bold focus:border-[var(--brand-500)]"
+                            class="w-full rounded-lg py-2.5 pl-9 pr-3 text-sm font-bold"
+                            :class="inputClasses(commercialError('base_cost'))"
                             placeholder="0.00"
                         >
                     </div>
+                    <p v-if="commercialError('base_cost')" class="mt-1.5 text-xs font-medium text-amber-700">{{ commercialError('base_cost') }}</p>
                 </div>
 
                 <div class="md:col-span-2">
@@ -188,10 +286,12 @@
                             v-model.number="item.supplier_cost"
                             type="number"
                             step="0.01"
-                            class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm font-bold focus:border-[var(--brand-500)]"
+                            class="w-full rounded-lg py-2.5 pl-9 pr-3 text-sm font-bold"
+                            :class="inputClasses(commercialError('supplier_cost'))"
                             placeholder="0.00"
                         >
                     </div>
+                    <p v-if="commercialError('supplier_cost')" class="mt-1.5 text-xs font-medium text-amber-700">{{ commercialError('supplier_cost') }}</p>
                 </div>
 
                 <div class="md:col-span-2">
@@ -208,13 +308,15 @@
                             v-model.number="item.discount_value"
                             type="number"
                             step="0.01"
-                            class="w-full rounded-r-lg border border-l-0 border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-[var(--brand-500)]"
+                            class="w-full rounded-r-lg border border-l-0 px-3 py-2.5 text-sm"
+                            :class="commercialError('discount_value') ? 'border-amber-300 bg-amber-50/70' : 'border-gray-300 bg-white focus:border-[var(--brand-500)]'"
                             placeholder="0.00"
                         >
                     </div>
                     <div class="ml-1 mt-1.5 text-[10px] font-medium text-gray-500">
                         Est: RM {{ formatNumber(calculatedDiscount) }}
                     </div>
+                    <p v-if="commercialError('discount_value')" class="mt-1.5 text-xs font-medium text-amber-700">{{ commercialError('discount_value') }}</p>
                 </div>
 
                 <div class="md:col-span-3">
@@ -231,13 +333,15 @@
                             v-model.number="item.tax_value"
                             type="number"
                             step="0.01"
-                            class="w-full rounded-r-lg border border-l-0 border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-[var(--brand-500)]"
+                            class="w-full rounded-r-lg border border-l-0 px-3 py-2.5 text-sm"
+                            :class="commercialError('tax_value') ? 'border-amber-300 bg-amber-50/70' : 'border-gray-300 bg-white focus:border-[var(--brand-500)]'"
                             placeholder="0.00"
                         >
                     </div>
                     <div class="ml-1 mt-1.5 text-[10px] font-medium text-gray-500">
                         Est: RM {{ formatNumber(calculatedTax) }}
                     </div>
+                    <p v-if="commercialError('tax_value')" class="mt-1.5 text-xs font-medium text-amber-700">{{ commercialError('tax_value') }}</p>
                 </div>
 
                 <div class="md:col-span-3">
@@ -248,10 +352,12 @@
                             v-model.number="item.sell_price"
                             type="number"
                             step="0.01"
-                            class="w-full rounded-lg border border-[var(--brand-300)] bg-blue-50 py-2.5 pl-10 text-sm font-black text-[var(--brand-800)] focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]"
+                            class="w-full rounded-lg py-2.5 pl-10 text-sm font-black text-[var(--brand-800)]"
+                            :class="commercialError('sell_price') ? 'border border-amber-300 bg-amber-50/70' : 'border border-[var(--brand-300)] bg-blue-50 focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]'"
                             placeholder="0.00"
                         >
                     </div>
+                    <p v-if="commercialError('sell_price')" class="mt-1.5 text-xs font-medium text-amber-700">{{ commercialError('sell_price') }}</p>
                 </div>
             </div>
 
@@ -281,24 +387,69 @@
                     <div class="mt-1 text-xl font-black text-white">RM {{ formatNumber(lineTotal) }}</div>
                 </div>
             </div>
+
+            <div class="mt-5 flex justify-end gap-3 border-t border-gray-100 pt-4">
+                <button
+                    type="button"
+                    class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-bold text-gray-600 transition hover:bg-gray-50"
+                    @click.prevent="saveAndMinimize"
+                >
+                    Save & Minimize
+                </button>
+            </div>
         </div>
 
-        <div v-else class="flex items-center justify-between p-5">
-            <div>
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-500">{{ schemaName }}</div>
-                <div class="mt-1 text-sm text-gray-600">{{ fields.length }} field{{ fields.length === 1 ? '' : 's' }} configured</div>
+        <div v-else class="flex items-center justify-between gap-4 p-5">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-bold text-gray-900">{{ schemaName }}</span>
+                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-600">{{ item.service_code }}</span>
+                    <span
+                        class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                        :class="hasErrors ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'"
+                    >
+                        {{ hasErrors ? `${validationCount} left` : 'Ready' }}
+                    </span>
+                </div>
+                <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    <span>{{ filledFieldCount }}/{{ fields.length }} schema fields</span>
+                    <span>•</span>
+                    <span>{{ item.qty }} x {{ item.unit_name || 'unit' }}</span>
+                    <span>•</span>
+                    <span>RM {{ formatNumber(lineTotal) }}</span>
+                </div>
             </div>
 
-            <div class="text-right">
-                <div class="text-xs font-semibold uppercase text-gray-400">Line Total</div>
-                <div class="mt-1 text-lg font-black text-gray-900">RM {{ formatNumber(lineTotal) }}</div>
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-[10px] font-bold text-[var(--brand-600)] transition hover:bg-[var(--brand-50)]"
+                    @click.prevent="isEditing = true"
+                >
+                    Edit
+                </button>
+                <button
+                    type="button"
+                    class="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                    @click.prevent="$emit('remove')"
+                >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import {
+    fieldIsRequired,
+    getPricingUnits,
+    humanize,
+    normalizeSchemaFields,
+} from '../serviceRecordSchema';
 
 const props = defineProps({
     item: {
@@ -309,56 +460,54 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    rowErrors: {
+        type: Object,
+        default: () => ({}),
+    },
+    submitAttempted: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-defineEmits(['remove']);
+const emit = defineEmits(['remove', 'validation-failed']);
 
 const isEditing = ref(true);
+const unitSuggestionsOpen = ref(false);
 
 const schemaName = computed(() => props.schema?.service_name || props.schema?.display_name || humanize(props.item.service_code));
+const fields = computed(() => normalizeSchemaFields(props.schema));
+const pricingUnits = computed(() => getPricingUnits(props.schema));
+const filteredUnitSuggestions = computed(() => {
+    const query = String(props.item.unit_name || '').trim().toLowerCase();
 
-const fields = computed(() => {
-    const payload = typeof props.schema?.schema_payload === 'string'
-        ? safelyParseJson(props.schema.schema_payload)
-        : (props.schema?.schema_payload || {});
-
-    const source = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.fields)
-            ? payload.fields
-            : [];
-
-    return source.map((field, index) => {
-        if (typeof field === 'string') {
-            return {
-                key: field,
-                label: humanize(field),
-                type: 'string',
-                ui_component: 'input',
-                is_array: false,
-                rules: [],
-                grid_span: 1,
-                order: index,
-                placeholder: '',
-                text_transform: 'none',
-                options: [],
-            };
+    return pricingUnits.value.filter((unit) => {
+        if (!query) {
+            return true;
         }
 
-        return {
-            key: field?.key || `field_${index + 1}`,
-            label: field?.label || humanize(field?.key || `Field ${index + 1}`),
-            type: field?.type || 'string',
-            ui_component: field?.ui_component || field?.component || defaultUiComponentForType(field?.type),
-            is_array: Boolean(field?.is_array),
-            rules: Array.isArray(field?.rules) ? field.rules : [],
-            grid_span: Number(field?.grid_span || 1),
-            order: Number(field?.order || index),
-            placeholder: field?.placeholder || '',
-            text_transform: field?.text_transform || 'none',
-            options: Array.isArray(field?.options) ? field.options : [],
-        };
-    }).sort((a, b) => a.order - b.order);
+        return unit.toLowerCase().includes(query);
+    });
+});
+const hasErrors = computed(() => Object.keys(props.rowErrors || {}).length > 0);
+const validationCount = computed(() => Object.keys(props.rowErrors || {}).length);
+const errorList = computed(() => Object.values(props.rowErrors || {}));
+const resolutionError = computed(() => props.rowErrors?.schema_vector_id || props.rowErrors?.service_code || '');
+const filteredErrorList = computed(() => errorList.value.filter((error) => error !== resolutionError.value));
+const filledFieldCount = computed(() => {
+    return fields.value.filter((field) => {
+        const value = props.item.service_details?.[field.key];
+
+        if (Array.isArray(value)) {
+            return value.some((entry) => String(entry ?? '').trim() !== '');
+        }
+
+        if (typeof value === 'boolean') {
+            return value;
+        }
+
+        return String(value ?? '').trim() !== '';
+    }).length;
 });
 
 const calculatedDiscount = computed(() => {
@@ -382,28 +531,95 @@ const calculatedTax = computed(() => {
 const totalBaseCost = computed(() => Number(props.item.base_cost || 0) * Number(props.item.qty || 0));
 const totalDiscount = computed(() => calculatedDiscount.value * Number(props.item.qty || 0));
 const totalTax = computed(() => calculatedTax.value * Number(props.item.qty || 0));
-
 const totalMargin = computed(() => {
-    const perUnitMargin = Math.max(Number(props.item.sell_price || 0) - calculatedDiscount.value, 0)
-        - Number(props.item.base_cost || 0);
-
+    const perUnitMargin = Math.max(Number(props.item.sell_price || 0) - calculatedDiscount.value, 0) - Number(props.item.base_cost || 0);
     return perUnitMargin * Number(props.item.qty || 0);
 });
+const lineTotal = computed(() => (Math.max(Number(props.item.sell_price || 0) - calculatedDiscount.value, 0) + calculatedTax.value) * Number(props.item.qty || 0));
 
-const lineTotal = computed(() => {
-    return (Math.max(Number(props.item.sell_price || 0) - calculatedDiscount.value, 0) + calculatedTax.value) * Number(props.item.qty || 0);
+const cardClasses = computed(() => {
+    if (hasErrors.value) {
+        return 'border-amber-300 bg-amber-50/30 ring-2 ring-amber-100';
+    }
+
+    return isEditing.value
+        ? 'border-[var(--brand-200)] bg-white ring-4 ring-blue-50/50'
+        : 'border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:shadow-md';
 });
+
+watch(
+    () => props.submitAttempted,
+    (attempted) => {
+        if (attempted && hasErrors.value) {
+            isEditing.value = true;
+        }
+    }
+);
+
+watch(
+    () => props.rowErrors,
+    (errors) => {
+        if (Object.keys(errors || {}).length > 0) {
+            isEditing.value = true;
+        }
+    },
+    { deep: true }
+);
+
+function fieldError(fieldKey) {
+    return props.rowErrors?.[`service_details.${fieldKey}`] || '';
+}
+
+function commercialError(fieldKey) {
+    return props.rowErrors?.[fieldKey] || '';
+}
+
+function saveAndMinimize() {
+    if (hasErrors.value) {
+        emit('validation-failed', {
+            schemaName: schemaName.value,
+            count: validationCount.value,
+        });
+    }
+
+    isEditing.value = false;
+}
+
+function selectUnitSuggestion(unit) {
+    props.item.unit_name = unit;
+    unitSuggestionsOpen.value = false;
+}
+
+function closeUnitSuggestions() {
+    window.setTimeout(() => {
+        unitSuggestionsOpen.value = false;
+    }, 120);
+}
+
+function inputClasses(hasErrorMessage) {
+    return hasErrorMessage
+        ? 'border-amber-300 bg-amber-50/70 focus:border-amber-400 focus:ring-amber-200'
+        : 'border-gray-200 bg-gray-50 focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]';
+}
 
 function getHtmlInputType(type, uiComponent) {
     if (uiComponent === 'date' || type === 'date') {
         return 'date';
     }
 
+    if (uiComponent === 'datetime-local' || type === 'datetime') {
+        return 'datetime-local';
+    }
+
+    if (uiComponent === 'time' || type === 'time') {
+        return 'time';
+    }
+
     if (uiComponent === 'email' || type === 'email') {
         return 'email';
     }
 
-    if (uiComponent === 'number' || type === 'number' || type === 'integer' || type === 'decimal') {
+    if (uiComponent === 'number' || ['number', 'integer', 'decimal', 'float'].includes(type)) {
         return 'number';
     }
 
@@ -418,38 +634,8 @@ function onFileChange(event, key) {
     props.item.service_details[key] = event.target.files?.[0] || null;
 }
 
-function safelyParseJson(value) {
-    try {
-        return JSON.parse(value);
-    } catch {
-        return {};
-    }
-}
-
 function formatNumber(value) {
     return Number(value || 0).toFixed(2);
-}
-
-function humanize(value) {
-    return String(value || '')
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function defaultUiComponentForType(type) {
-    if (type === 'text') {
-        return 'textarea';
-    }
-
-    if (type === 'date') {
-        return 'date';
-    }
-
-    if (type === 'file') {
-        return 'file';
-    }
-
-    return 'input';
 }
 
 function normalizeOptionValue(option) {

@@ -17,11 +17,16 @@
                 <input
                     v-model="clientSearchQuery"
                     type="text"
-                    class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]"
+                    class="w-full rounded-lg px-4 py-2.5 text-sm text-gray-900"
+                    :class="clientError ? 'border border-amber-300 bg-amber-50/70 focus:border-amber-400 focus:ring-amber-200' : 'border border-gray-300 bg-white focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]'"
                     placeholder="Type to search..."
                     autocomplete="off"
                     @focus="isDropdownOpen = true"
                 >
+
+                <p v-if="clientError" class="mt-1.5 text-xs font-medium text-amber-700">
+                    {{ clientError }}
+                </p>
 
                 <div
                     v-if="isDropdownOpen && filteredClients.length > 0"
@@ -64,7 +69,8 @@
 
                 <select
                     :value="normalizedContractNo"
-                    class="w-full rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-[var(--brand-900)] focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]"
+                    class="w-full rounded-lg px-4 py-2.5 text-sm font-bold text-[var(--brand-900)]"
+                    :class="contractError ? 'border border-amber-300 bg-amber-50/70 focus:border-amber-400 focus:ring-amber-200' : 'border border-blue-200 bg-blue-50 focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)]'"
                     @change="$emit('update:contractNo', normalizeNullable($event.target.value))"
                 >
                     <option :value="''" disabled>
@@ -103,6 +109,10 @@
                         </div>
                     </div>
                 </div>
+
+                <p v-if="contractError" class="mt-1.5 text-xs font-medium text-amber-700">
+                    {{ contractError }}
+                </p>
             </div>
         </div>
     </div>
@@ -123,6 +133,14 @@ const props = defineProps({
     contractNo: {
         type: [String, null],
         default: null,
+    },
+    clientError: {
+        type: String,
+        default: '',
+    },
+    contractError: {
+        type: String,
+        default: '',
     },
 });
 

@@ -24,6 +24,8 @@ class ServiceRecord extends Model
         'invoice_no',
         'client_id',
         'contract_no',
+        'client_remark_preset_id',
+        'remarks',
         'total_amount',
         'status',
     ];
@@ -35,6 +37,7 @@ class ServiceRecord extends Model
     protected function casts(): array
     {
         return [
+            'client_remark_preset_id' => 'integer',
             'total_amount' => 'decimal:2',
         ];
     }
@@ -71,6 +74,11 @@ class ServiceRecord extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function clientRemarkPreset(): BelongsTo
+    {
+        return $this->belongsTo(ClientRemarkPreset::class, 'client_remark_preset_id');
     }
 
     public function rows(): HasMany

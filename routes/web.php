@@ -59,24 +59,36 @@ Route::domain('{subdomain}.'.AppHost::baseDomain())
 
         Route::middleware(['company_module:travel.booking'])->group(function () {
             Route::get('/service-records', [ServiceRecordController::class, 'index'])->name('service-records.index');
-            Route::get('/service-records/create', [ServiceRecordController::class, 'create'])->name('service-records.create');
-            Route::post('/service-records', [ServiceRecordController::class, 'store'])->name('service-records.store');
             Route::get('/service-records/{id}/download-document', [ServiceRecordController::class, 'downloadDocument'])->name('service-records.download');
             Route::get('/service-records/{id}', [ServiceRecordController::class, 'show'])->name('service-records.show');
-            Route::put('/service-records/{id}/document', [ServiceRecordController::class, 'updateDocument'])->name('service-records.document');
 
             Route::redirect('/operations', '/service-records')->name('operations.index');
-            Route::redirect('/operations/create', '/service-records/create')->name('operations.create');
             Route::get('/operations/{id}', [OperationController::class, 'show'])->name('operations.show');
             Route::put('/operations/{id}/document', [OperationController::class, 'updateDocument'])->name('operations.document');
             Route::get('/operations/{id}/download-document', [OperationController::class, 'downloadDocument'])->name('operations.download');
+        });
+
+        Route::middleware(['company_module:travel.booking', 'super_admin_or_tenant_role:agency_admin,booking_manager,travel_agent'])->group(function () {
+            Route::get('/service-records/create', [ServiceRecordController::class, 'create'])->name('service-records.create');
+            Route::post('/service-records', [ServiceRecordController::class, 'store'])->name('service-records.store');
+            Route::get('/service-records/{id}/edit', [ServiceRecordController::class, 'edit'])->name('service-records.edit');
+            Route::put('/service-records/{id}', [ServiceRecordController::class, 'update'])->name('service-records.update');
+
+            Route::redirect('/operations/create', '/service-records/create')->name('operations.create');
             Route::post('/operations', [OperationController::class, 'store'])->name('operations.store');
+        });
+
+        Route::middleware(['company_module:travel.booking', 'super_admin_or_tenant_role:agency_admin,document_manager'])->group(function () {
+            Route::put('/service-records/{id}/document', [ServiceRecordController::class, 'updateDocument'])->name('service-records.document');
         });
 
         Route::middleware(['company_module:travel.booking'])->group(function () {
             Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
             Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
             Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+            Route::post('/clients/{client}/remark-presets', [ClientController::class, 'storeRemarkPreset'])->name('clients.remark-presets.store');
+            Route::put('/clients/{client}/remark-presets/{preset}', [ClientController::class, 'updateRemarkPreset'])->name('clients.remark-presets.update');
+            Route::delete('/clients/{client}/remark-presets/{preset}', [ClientController::class, 'destroyRemarkPreset'])->name('clients.remark-presets.destroy');
 
             Route::post('/contracts', [ContractController::class, 'store'])->name('contracts.store');
             Route::put('/contracts/{id}', [ContractController::class, 'update'])->name('contracts.update');

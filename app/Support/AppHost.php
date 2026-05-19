@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Http\Request;
+
 class AppHost
 {
     public static function appUrl(): string
@@ -72,6 +74,32 @@ class AppHost
         $normalizedPath = '/'.ltrim($path, '/');
 
         return self::scheme().'://'.self::normalizeHost($host).self::portSegment().$normalizedPath;
+    }
+
+    public static function absoluteUrlForRequest(Request $request, string $host, string $path = '/'): string
+    {
+        $normalizedPath = '/'.ltrim($path, '/');
+        $scheme = $request->getScheme();
+        $portSegment = self::requestPortSegment($request);
+
+        return $scheme.'://'.self::normalizeHost($host).$portSegment.$normalizedPath;
+    }
+
+    public static function requestHostWithPort(Request $request, ?string $host = null): string
+    {
+        return self::normalizeHost($host ?? $request->getHost()).self::requestPortSegment($request);
+    }
+
+    public static function requestPortSegment(Request $request): string
+    {
+        $port = $request->getPort();
+        $scheme = $request->getScheme();
+
+        if (($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443)) {
+            return '';
+        }
+
+        return $port ? ':'.$port : '';
     }
 
     public static function normalizeHost(string $host): string

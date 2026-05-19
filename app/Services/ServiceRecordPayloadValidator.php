@@ -28,7 +28,7 @@ class ServiceRecordPayloadValidator
             $vector = $this->resolveVector($row, $company, $serviceGroupKey);
 
             if (! $vector) {
-                $errors["rows.{$index}.schema_vector_id"][] = 'Schema vector could not be resolved.';
+                $errors["rows.{$index}.schema_vector_id"][] = 'The selected schema vector is no longer available for this service group. Please remove this row and add it again from the current vector list.';
                 continue;
             }
 
@@ -105,7 +105,11 @@ class ServiceRecordPayloadValidator
 
         return SchemaVector::query()
             ->where('industry', $company->industry)
-            ->when($serviceGroupKey, fn ($query) => $query->where('service_group_key', $serviceGroupKey))
+            ->when($serviceGroupKey, fn ($query) => $query->where(function ($scope) use ($serviceGroupKey) {
+                $scope->where('service_group_key', $serviceGroupKey)
+                    ->orWhereNull('service_group_key')
+                    ->orWhere('service_group_key', '');
+            }))
             ->whereKey((int) $vectorId)
             ->first();
     }
@@ -113,7 +117,11 @@ class ServiceRecordPayloadValidator
     private function resolveUnitName(SchemaVector $vector): ?string
     {
         $payload = is_array($vector->schema_payload ?? null) ? $vector->schema_payload : [];
-        $unit = $payload['commercial']['unit'] ?? $payload['unit'] ?? null;
+        $pricingUnits = array_values(array_filter(array_map(
+            fn ($unit) => is_string($unit) ? trim($unit) : '',
+            is_array($payload['pricing_units'] ?? null) ? $payload['pricing_units'] : []
+        )));
+        $unit = $payload['commercial']['unit'] ?? $payload['unit'] ?? ($pricingUnits[0] ?? null);
 
         return is_string($unit) && trim($unit) !== '' ? trim($unit) : null;
     }

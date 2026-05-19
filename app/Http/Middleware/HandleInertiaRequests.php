@@ -73,7 +73,7 @@ class HandleInertiaRequests extends Middleware
     {
         $rawHost = (string) ($request->header('host') ?: $request->getHttpHost() ?: $request->getHost());
         $host = AppHost::normalizeHost($rawHost);
-        $systemName = (string) config('app.name', 'Sange Integrator');
+        $systemName = (string) config('app.name', 'Sange Central');
         $baseDomain = AppHost::baseDomain();
         $systemHosts = [AppHost::systemHost(), $baseDomain, 'localhost', '127.0.0.1'];
         $isSystemHost = in_array($host, $systemHosts, true);

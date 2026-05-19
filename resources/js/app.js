@@ -8,6 +8,18 @@ const inertiaElement = document.getElementById('app');
 // 2. Only ignite the Vue engine if we are inside a Tenant Vault
 if (inertiaElement) {
     createInertiaApp({
+        title: (title) => {
+            const host = window.location.hostname;
+            const rootTitle = host.startsWith('sys.')
+                ? 'Sange Central'
+                : (window.location.hostname.split('.')[0] || 'Sange');
+
+            if (!title || title === rootTitle) {
+                return rootTitle;
+            }
+
+            return `${title} | ${rootTitle}`;
+        },
         resolve: name => {
             const pages = import.meta.glob('./Pages/**/*.vue', { eager: true });
             return pages[`./Pages/${name}.vue`];

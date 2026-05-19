@@ -79,8 +79,6 @@
             @close="deleteState.isOpen = false"
             @confirm="performDelete"
         />
-
-        <GlobalToast />
     </TenantLayout>
 </template>
 
@@ -90,7 +88,6 @@ import { Link, router } from '@inertiajs/vue3';
 import TenantLayout from '../../../Layouts/TenantLayout.vue';
 import Breadcrumbs from '../../../Components/UI/Breadcrumbs.vue';
 import ConfirmationModal from '../../../Components/UI/ConfirmationModal.vue';
-import GlobalToast from '../../../Components/GlobalToast.vue';
 
 defineProps({
     templates: {

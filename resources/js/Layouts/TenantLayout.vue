@@ -1,4 +1,9 @@
 <template>
+    <Head>
+        <title>{{ companyName }}</title>
+        <link rel="icon" :href="tenantFaviconUrl">
+    </Head>
+
     <div class="flex h-screen overflow-hidden bg-slate-100 font-sans" :style="themeStyles">
         <div
             v-if="isMobileMenuOpen"
@@ -228,7 +233,7 @@
 
                             <div>
                                 <div class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-                                    Tenant Workspace
+                                    {{ companyHost }}
                                 </div>
                                 <div class="text-lg font-bold text-slate-900">
                                     {{ companyName }}
@@ -262,12 +267,15 @@
                 <slot />
             </main>
         </div>
+
+        <GlobalToast />
     </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import GlobalToast from '@/Components/GlobalToast.vue';
 
 const page = usePage();
 
@@ -306,6 +314,7 @@ const resolvedTenantNav = computed(() => {
 const companyName = computed(() => currentCompany.value?.name || 'Tenant Workspace');
 const companyHost = computed(() => brand.value?.tenant?.host || currentCompany.value?.subdomain || 'tenant');
 const companyInitial = computed(() => companyName.value.charAt(0).toUpperCase());
+const tenantFaviconUrl = computed(() => brand.value?.favicon_url || companyLogoUrl.value || '/favicon.ico');
 
 const companyLogoUrl = computed(() => {
     const path = currentCompany.value?.logo_path;

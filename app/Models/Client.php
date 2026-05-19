@@ -26,4 +26,9 @@ class Client extends Model
     {
         return $this->hasMany(Contract::class);
     }
+
+    public function remarkPresets(): HasMany
+    {
+        return $this->hasMany(ClientRemarkPreset::class)->orderBy('title');
+    }
 }

@@ -50,7 +50,7 @@ class CompanyController extends Controller
             ->orderByDesc('created_at')
             ->paginate(10)
             ->withQueryString()
-            ->through(fn (Company $company) => $this->presentCompany($company));
+            ->through(fn (Company $company) => $this->presentCompany($company, $request));
 
         $activeCompanyCount = (clone $companyQuery)
             ->where('is_active', true)
@@ -75,7 +75,7 @@ class CompanyController extends Controller
             })
             ->orderBy('name')
             ->get()
-            ->map(fn (MainGroupCompany $group) => $this->presentMainGroup($group))
+            ->map(fn (MainGroupCompany $group) => $this->presentMainGroup($group, $request))
             ->values();
 
         $ungroupedCompanies = Company::query()
@@ -84,7 +84,7 @@ class CompanyController extends Controller
             ->when($search !== '', fn ($query) => $companySearch($query))
             ->orderBy('name')
             ->get()
-            ->map(fn (Company $company) => $this->presentCompany($company))
+            ->map(fn (Company $company) => $this->presentCompany($company, $request))
             ->values();
 
         return Inertia::render('System/Companies/Index', [
@@ -162,9 +162,9 @@ class CompanyController extends Controller
             ->with('success', "Main group [{$mainGroupCompany->name}] updated successfully.");
     }
 
-    private function tenantDashboardUrl(Company $company): string
+    private function tenantDashboardUrl(Company $company, Request $request): string
     {
-        return AppHost::absoluteUrl(AppHost::tenantHost($company->subdomain), '/dashboard');
+        return AppHost::absoluteUrlForRequest($request, AppHost::tenantHost($company->subdomain), '/dashboard');
     }
 
     private function storeLogo(UploadedFile $file, string $folder): string
@@ -172,7 +172,7 @@ class CompanyController extends Controller
         return $file->store($folder, 'public');
     }
 
-    private function presentCompany(Company $company): array
+    private function presentCompany(Company $company, Request $request): array
     {
         return [
             'id' => $company->id,
@@ -187,7 +187,7 @@ class CompanyController extends Controller
             'logo_path' => $company->logo_path,
             'theme_color' => $company->theme_color,
             'is_active' => $company->is_active,
-            'vault_url' => $this->tenantDashboardUrl($company),
+            'vault_url' => $this->tenantDashboardUrl($company, $request),
             'main_group_company' => $company->mainGroupCompany
                 ? [
                     'id' => $company->mainGroupCompany->id,
@@ -204,7 +204,7 @@ class CompanyController extends Controller
         ];
     }
 
-    private function presentMainGroup(MainGroupCompany $group): array
+    private function presentMainGroup(MainGroupCompany $group, Request $request): array
     {
         $companies = $group->relationLoaded('companies')
             ? $group->companies
@@ -222,7 +222,7 @@ class CompanyController extends Controller
             'companies_count' => $companies->count(),
             'active_companies_count' => $companies->where('is_active', true)->count(),
             'companies' => $companies
-                ->map(fn (Company $company) => $this->presentCompany($company))
+                ->map(fn (Company $company) => $this->presentCompany($company, $request))
                 ->values()
                 ->all(),
         ];

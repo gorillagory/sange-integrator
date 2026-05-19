@@ -113,6 +113,7 @@ class DocumentRenderContextFactory
             'reference_no' => $serviceRecord->reference_no,
             'document_no' => $serviceRecord->document_no,
             'status' => $serviceRecord->status,
+            'remarks' => (string) ($serviceRecord->remarks ?? ''),
             'captured_at' => optional($serviceRecord->created_at)->toIso8601String(),
             'start_date' => optional($serviceRecord->created_at)->format('d M Y') ?: now()->format('d M Y'),
             'end_date' => optional($serviceRecord->created_at)->addDays(1)->format('d M Y') ?: now()->addDay()->format('d M Y'),
@@ -137,6 +138,7 @@ class DocumentRenderContextFactory
                 'name' => $client?->name ?: 'Client',
                 'email' => $client?->hq_contact_email ?: '',
                 'address' => $this->formatAddress($contract?->billing_address),
+                'remarks' => (string) ($serviceRecord->remarks ?? ''),
             ],
             'invoice' => [
                 'number' => $serviceRecord->document_no ?: ('DOC-' . str_pad((string) $serviceRecord->id, 6, '0', STR_PAD_LEFT)),
@@ -174,6 +176,7 @@ class DocumentRenderContextFactory
             'operation' => $serviceRecordPayload,
             'services' => $serviceRows,
             'service_instances' => $serviceRows,
+            'remarks' => (string) ($serviceRecord->remarks ?? ''),
         ];
 
         return $this->withMeta('invoice', $payload);

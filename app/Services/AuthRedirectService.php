@@ -96,12 +96,12 @@ class AuthRedirectService
 
     public function systemDashboardUrl(): string
     {
-        return AppHost::absoluteUrl(AppHost::systemHost(), '/dashboard');
+        return AppHost::absoluteUrlForRequest(request(), AppHost::systemHost(), '/dashboard');
     }
 
     public function tenantDashboardUrlForCompany(Company $company): string
     {
-        return AppHost::absoluteUrl(AppHost::tenantHost($company->subdomain), '/dashboard');
+        return AppHost::absoluteUrlForRequest(request(), AppHost::tenantHost($company->subdomain), '/dashboard');
     }
 
     private function isSystemHost(string $host): bool

@@ -44,6 +44,7 @@ class DocumentPreviewPayloadFactory
                 'name' => 'Acme Corporation Sdn Bhd',
                 'email' => 'billing@acme.test',
                 'address' => 'Suite 101, Innovation Tower, Cyberjaya, Selangor',
+                'remarks' => "Patient EID: EID-77821\nTravel Code: AZFA\nBill under Mubadala operations allocation.",
             ],
         ];
     }
@@ -68,6 +69,7 @@ class DocumentPreviewPayloadFactory
                 'reference_no' => 'SRV-2026-88992',
                 'document_no' => 'DOC-2026-001',
                 'status' => 'DocumentLocked',
+                'remarks' => "Patient EID: EID-77821\nTravel Code: AZFA\nBill under Mubadala operations allocation.",
                 'captured_at' => now()->toIso8601String(),
                 'start_date' => now()->format('d M Y'),
                 'end_date' => now()->addDays(6)->format('d M Y'),
@@ -87,6 +89,7 @@ class DocumentPreviewPayloadFactory
             ],
             'services' => $this->sampleServices(),
             'service_instances' => $this->sampleServices(),
+            'remarks' => "Patient EID: EID-77821\nTravel Code: AZFA\nBill under Mubadala operations allocation.",
             'invoice' => [
                 'number' => 'DOC-2026-001',
                 'issue_date' => now()->format('d M Y'),
@@ -177,6 +180,7 @@ class DocumentPreviewPayloadFactory
                 'reference_no' => 'SRV-88992',
                 'document_no' => 'DOC-2026-001',
                 'status' => 'Draft',
+                'remarks' => "Patient EID: EID-77821\nTravel Code: AZFA\nBill under Mubadala operations allocation.",
                 'captured_at' => now()->toIso8601String(),
                 'start_date' => now()->addDays(10)->format('d M Y'),
                 'end_date' => now()->addDays(16)->format('d M Y'),
@@ -196,6 +200,7 @@ class DocumentPreviewPayloadFactory
             'schema_vectors' => array_map(fn (array $row) => $row['schema_vector'], $this->sampleServices()),
             'services' => $this->sampleServices(),
             'service_instances' => $this->sampleServices(),
+            'remarks' => "Patient EID: EID-77821\nTravel Code: AZFA\nBill under Mubadala operations allocation.",
         ]);
     }
 

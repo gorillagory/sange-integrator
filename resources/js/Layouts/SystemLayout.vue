@@ -1,4 +1,9 @@
 <template>
+    <Head>
+        <title>Sange Central</title>
+        <link rel="icon" :href="faviconUrl">
+    </Head>
+
     <div class="min-h-screen bg-[#0b1220] text-slate-200">
         <div class="flex min-h-screen">
             <aside
@@ -7,12 +12,12 @@
                 <div class="border-b border-white/10 px-6 py-6">
                     <div class="flex items-center gap-4">
                         <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-lg font-black text-white shadow-lg shadow-indigo-900/40">
-                            NX
+                            SC
                         </div>
 
                         <div>
                             <div class="text-sm font-black uppercase tracking-[0.22em] text-white">
-                                Nexus OS
+                                Sange Central
                             </div>
                             <div class="mt-1 text-xs font-medium text-indigo-300">
                                 System Administrator Console
@@ -85,15 +90,15 @@
                     <div class="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
                         <div class="flex items-center gap-3 lg:hidden">
                             <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-sm font-black text-white">
-                                NX
+                                SC
                             </div>
 
                             <div>
                                 <div class="text-sm font-black uppercase tracking-[0.22em] text-white">
-                                    Nexus OS
+                                    Sange Central
                                 </div>
                                 <div class="text-xs text-indigo-300">
-                                    System Admin
+                                    Central Console
                                 </div>
                             </div>
                         </div>
@@ -102,7 +107,7 @@
                             <slot name="header">
                                 <div>
                                     <h1 class="truncate text-2xl font-black tracking-tight text-white">
-                                        System Workspace
+                                        Sange Central
                                     </h1>
                                     <p class="mt-1 text-sm text-slate-400">
                                         Manage service records from the central control plane.
@@ -141,13 +146,14 @@
 
 <script setup>
 import { computed, h } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
 
 const currentUser = computed(() => page.props?.auth?.user ?? null);
 const rbac = computed(() => page.props?.auth?.rbac ?? {});
 const systemNav = computed(() => rbac.value?.system_nav ?? {});
+const faviconUrl = computed(() => page.props?.brand?.favicon_url || '/favicon.ico');
 
 const resolvedSystemNav = computed(() => {
     const nav = systemNav.value ?? {};

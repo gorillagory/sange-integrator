@@ -5,7 +5,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\ClientRemarkPreset;
 use App\Models\Contract;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -91,5 +93,88 @@ class ClientController extends Controller
         return redirect()->route('clients.index', [
             'subdomain' => request()->route('subdomain'),
         ])->with('success', 'Corporate Client and Local Contracts successfully onboarded.');
+    }
+
+    public function storeRemarkPreset(Request $request, Client $client): JsonResponse
+    {
+        $this->assertClientAvailableToTenant($client);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:120'],
+            'content' => ['required', 'string', 'max:5000'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $preset = $client->remarkPresets()->create([
+            'title' => trim($validated['title']),
+            'content' => trim($validated['content']),
+            'is_active' => $validated['is_active'] ?? true,
+        ]);
+
+        return response()->json([
+            'preset' => $this->presentRemarkPreset($preset->fresh()),
+        ]);
+    }
+
+    public function updateRemarkPreset(Request $request, Client $client, ClientRemarkPreset $preset): JsonResponse
+    {
+        $this->assertClientAvailableToTenant($client);
+
+        abort_unless((int) $preset->client_id === (int) $client->id, 404);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:120'],
+            'content' => ['required', 'string', 'max:5000'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $preset->update([
+            'title' => trim($validated['title']),
+            'content' => trim($validated['content']),
+            'is_active' => $validated['is_active'] ?? $preset->is_active,
+        ]);
+
+        return response()->json([
+            'preset' => $this->presentRemarkPreset($preset->fresh()),
+        ]);
+    }
+
+    public function destroyRemarkPreset(Client $client, ClientRemarkPreset $preset): JsonResponse
+    {
+        $this->assertClientAvailableToTenant($client);
+
+        abort_unless((int) $preset->client_id === (int) $client->id, 404);
+
+        $preset->delete();
+
+        return response()->json([
+            'deleted' => true,
+            'preset_id' => $preset->id,
+        ]);
+    }
+
+    private function assertClientAvailableToTenant(Client $client): void
+    {
+        $company = view()->shared('currentCompany');
+
+        abort_unless(
+            Contract::query()
+                ->where('company_id', $company->id)
+                ->where('client_id', $client->id)
+                ->exists(),
+            404
+        );
+    }
+
+    private function presentRemarkPreset(ClientRemarkPreset $preset): array
+    {
+        return [
+            'id' => $preset->id,
+            'client_id' => $preset->client_id,
+            'title' => $preset->title,
+            'content' => $preset->content,
+            'is_active' => (bool) $preset->is_active,
+            'updated_at' => optional($preset->updated_at)?->toDateTimeString(),
+        ];
     }
 }
