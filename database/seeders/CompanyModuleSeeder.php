@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Company;
 use App\Models\MainGroupCompany;
 use App\Models\Module;
+use App\Services\RbacMatrixService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ class CompanyModuleSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        DB::connection('control')->transaction(function () use ($now) {
+        $seededCompanies = DB::connection('control')->transaction(function () use ($now) {
             $group = MainGroupCompany::query()->updateOrCreate(
                 ['name' => 'Bayam Group'],
                 [
@@ -96,7 +97,15 @@ class CompanyModuleSeeder extends Seeder
                     ]);
                 }
             }
+
+            return $seededCompanies;
         });
+
+        $rbacMatrix = app(RbacMatrixService::class);
+
+        foreach ($seededCompanies as $company) {
+            $rbacMatrix->bootstrapTenantRoles((int) $company->id);
+        }
 
         $this->command?->info('Seeded Bayam Group companies and module assignments.');
     }

@@ -39,10 +39,16 @@ export function useSchemaCompiler(form) {
             return node;
         });
 
+        const pricingUnits = Array.from(new Set(
+            (Array.isArray(form.pricing_units) ? form.pricing_units : [])
+                .map((unit) => String(unit || '').trim().toLowerCase())
+                .filter(Boolean)
+        ));
+
         return JSON.stringify({
             fields,
             document_output: form.document_output,
-            pricing_units: form.pricing_units
+            pricing_units: pricingUnits
         }, null, 4);
     });
 

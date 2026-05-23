@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\System;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -9,18 +10,6 @@ use Illuminate\Validation\Validator;
 
 class UpdateUserRequest extends FormRequest
 {
-    private const GLOBAL_ROLES = [
-        'super_admin',
-        'system_admin',
-    ];
-
-    private const TENANT_ROLES = [
-        'agency_admin',
-        'travel_agent',
-        'booking_manager',
-        'document_manager',
-    ];
-
     public function authorize(): bool
     {
         return true;
@@ -41,12 +30,12 @@ class UpdateUserRequest extends FormRequest
             'password' => ['nullable', 'confirmed', Password::defaults()],
 
             'global_roles' => ['nullable', 'array'],
-            'global_roles.*' => ['string', 'in:' . implode(',', self::GLOBAL_ROLES)],
+            'global_roles.*' => ['string'],
 
             'memberships' => ['nullable', 'array'],
             'memberships.*.company_id' => ['required', 'integer', 'exists:control.companies,id'],
             'memberships.*.tenant_roles' => ['nullable', 'array'],
-            'memberships.*.tenant_roles.*' => ['string', 'in:' . implode(',', self::TENANT_ROLES)],
+            'memberships.*.tenant_roles.*' => ['string'],
         ];
     }
 
@@ -55,6 +44,7 @@ class UpdateUserRequest extends FormRequest
         $validator->after(function (Validator $validator) {
             $globalRoles = $this->normalizeGlobalRoles();
             $memberships = $this->normalizeMemberships();
+            $allowedGlobalRoles = $this->allowedGlobalRoles();
 
             $companyIds = collect($memberships)
                 ->pluck('company_id')
@@ -63,6 +53,12 @@ class UpdateUserRequest extends FormRequest
 
             if ($companyIds->count() !== $companyIds->unique()->count()) {
                 $validator->errors()->add('memberships', 'Each company may only be assigned once.');
+            }
+
+            foreach ($globalRoles as $roleName) {
+                if (! in_array($roleName, $allowedGlobalRoles, true)) {
+                    $validator->errors()->add('global_roles', "Global role [{$roleName}] is not available.");
+                }
             }
 
             $isSuperAdmin = in_array('super_admin', $globalRoles, true);
@@ -74,12 +70,42 @@ class UpdateUserRequest extends FormRequest
 
             foreach ($memberships as $index => $membership) {
                 $tenantRoles = $membership['tenant_roles'] ?? [];
+                $allowedTenantRoles = $this->allowedTenantRolesForCompany((int) ($membership['company_id'] ?? 0));
 
                 if (! empty($tenantRoles) && empty($membership['company_id'])) {
                     $validator->errors()->add("memberships.{$index}.company_id", 'A company is required when assigning tenant roles.');
                 }
+
+                foreach ($tenantRoles as $roleName) {
+                    if (! in_array($roleName, $allowedTenantRoles, true)) {
+                        $validator->errors()->add("memberships.{$index}.tenant_roles", "Tenant role [{$roleName}] is not available for the selected company.");
+                    }
+                }
             }
         });
+    }
+
+    private function allowedGlobalRoles(): array
+    {
+        return Role::query()
+            ->where('company_id', 0)
+            ->whereNotIn('name', array_keys(config('rbac.tenant_role_permissions', [])))
+            ->pluck('name')
+            ->values()
+            ->all();
+    }
+
+    private function allowedTenantRolesForCompany(int $companyId): array
+    {
+        if ($companyId <= 0) {
+            return [];
+        }
+
+        return Role::query()
+            ->where('company_id', $companyId)
+            ->pluck('name')
+            ->values()
+            ->all();
     }
 
     private function normalizeGlobalRoles(): array

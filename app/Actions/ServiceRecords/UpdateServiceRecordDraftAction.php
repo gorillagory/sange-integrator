@@ -41,7 +41,9 @@ class UpdateServiceRecordDraftAction
                 'contract_no' => $validated['contract_no'],
                 'client_remark_preset_id' => $validated['client_remark_preset_id'] ?? null,
                 'remarks' => $validated['remarks'] ?? null,
+                'assigned_user_id' => $validated['assigned_user_id'] ?? $serviceRecord->assigned_user_id,
                 'status' => 'Draft',
+                'service_status' => $serviceRecord->service_status ?: 'Pending',
             ]);
 
             foreach ($validated['rows'] as $index => $item) {

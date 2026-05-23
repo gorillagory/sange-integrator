@@ -50,8 +50,14 @@
                 <div class="border-t border-white/10 px-4 py-4">
                     <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-500/20 text-sm font-black text-indigo-200">
-                                {{ userInitials }}
+                            <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-indigo-500/20 text-sm font-black text-indigo-200">
+                                <img
+                                    v-if="currentUser?.image_url"
+                                    :src="currentUser.image_url"
+                                    :alt="`${currentUser.name} avatar`"
+                                    class="h-full w-full object-cover"
+                                >
+                                <span v-else>{{ userInitials }}</span>
                             </div>
 
                             <div class="min-w-0 flex-1">
@@ -173,6 +179,7 @@ const resolvedSystemNav = computed(() => {
         companies: true,
         blueprints: true,
         users: true,
+        rbac: true,
         audit_logs: true,
     };
 });
@@ -221,6 +228,12 @@ const systemNavItems = computed(() => {
             allowed: Boolean(resolvedSystemNav.value?.users),
         },
         {
+            href: '/rbac',
+            label: 'RBAC Studio',
+            icon: 'shield',
+            allowed: Boolean(resolvedSystemNav.value?.rbac),
+        },
+        {
             href: '/audit-logs',
             label: 'Audit Logs',
             icon: 'logs',
@@ -236,6 +249,7 @@ const icons = {
     companies: 'M4 21h16M7 21V8h10v13M9 12h2m2 0h2',
     blueprints: 'M4 7l8-4 8 4-8 4-8-4zm0 5l8 4 8-4m-16 5l8 4 8-4',
     users: 'M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2m18 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+    shield: 'M12 3l7 4v5c0 5-3.5 9.5-7 10-3.5-.5-7-5-7-10V7l7-4z',
     logs: 'M9 17v-6m3 6V7m3 10v-3M4 20h16M5 4h14a1 1 0 0 1 1 1v14H4V5a1 1 0 0 1 1-1z',
 };
 

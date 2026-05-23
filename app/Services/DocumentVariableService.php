@@ -11,6 +11,9 @@ class DocumentVariableService
             'receipt',
             'quote',
             'itinerary',
+            'letter',
+            'memo',
+            'reply',
         ];
     }
 
@@ -23,6 +26,9 @@ class DocumentVariableService
             'receipt' => self::getReceiptVariables(),
             'quote' => self::getQuoteVariables(),
             'itinerary' => self::getItineraryVariables(),
+            'letter' => self::getLetterVariables(),
+            'memo' => self::getMemoVariables(),
+            'reply' => self::getReplyVariables(),
             default => [],
         };
 
@@ -92,6 +98,67 @@ class DocumentVariableService
                 'description' => 'Customer billing address',
                 'example' => '456 Buyer Lane, Penang',
             ],
+            [
+                'key' => 'client.profile',
+                'description' => 'Client profile or operating summary',
+                'example' => 'Energy enterprise account with travel-code and billing controls.',
+            ],
+            [
+                'key' => 'client.remarks',
+                'description' => 'Reusable client remarks or operational instructions',
+                'example' => "Patient EID: EID-77821\nTravel Code: AZFA",
+            ],
+            [
+                'key' => 'author.name',
+                'description' => 'Service record author or creator name',
+                'example' => 'Muhammad Faizal',
+            ],
+            [
+                'key' => 'author.email',
+                'description' => 'Service record author email',
+                'example' => 'faizal@bayam.test',
+            ],
+            [
+                'key' => 'user.name',
+                'description' => 'Alias of the service record author name',
+                'example' => 'Muhammad Faizal',
+            ],
+            [
+                'key' => 'user.email',
+                'description' => 'Alias of the service record author email',
+                'example' => 'faizal@bayam.test',
+            ],
+            [
+                'key' => 'assigned_user.name',
+                'description' => 'Assigned personnel name',
+                'example' => 'Nur Amalina',
+            ],
+            [
+                'key' => 'assigned_user.email',
+                'description' => 'Assigned personnel email',
+                'example' => 'amalina@bayam.test',
+            ],
+            [
+                'key' => 'remarks',
+                'description' => 'Top-level remarks snapshot for the current document',
+                'example' => "Patient EID: EID-77821\nTravel Code: AZFA",
+            ],
+            [
+                'key' => 'document_links.reference_value',
+                'description' => 'Canonical document reference value',
+                'example' => 'DOC-2026-001',
+            ],
+            [
+                'key' => 'document_links.reference_label',
+                'description' => 'Human-readable label for the digital document identifier',
+                'example' => 'Document Reference',
+            ],
+            [
+                'key' => 'document_links.reference_qr_data_uri',
+                'description' => 'QR code image for the canonical document reference',
+                'example' => 'data:image/svg+xml;base64,...',
+                'is_image' => true,
+            ],
         ];
     }
 
@@ -112,6 +179,21 @@ class DocumentVariableService
                 'key' => 'service_record.document_no',
                 'description' => 'Canonical document number attached to this service record',
                 'example' => 'DOC-2026-001',
+            ],
+            [
+                'key' => 'service_record.remarks',
+                'description' => 'Captured service-record remarks snapshot',
+                'example' => "Patient EID: EID-77821\nTravel Code: AZFA",
+            ],
+            [
+                'key' => 'service_record.author_name',
+                'description' => 'Service record author name',
+                'example' => 'Muhammad Faizal',
+            ],
+            [
+                'key' => 'service_record.assigned_user_name',
+                'description' => 'Assigned personnel name',
+                'example' => 'Nur Amalina',
             ],
             [
                 'key' => 'invoice.number',
@@ -253,29 +335,70 @@ class DocumentVariableService
                 'example' => 'Draft',
             ],
             [
+                'key' => 'service_record.remarks',
+                'description' => 'Service record remarks snapshot',
+                'example' => "Patient EID: EID-77821\nTravel Code: AZFA",
+            ],
+            [
                 'key' => 'service_rows',
                 'description' => 'ARRAY: Canonical service record rows',
                 'example' => '[Loop Target]',
                 'is_array' => true,
                 'children' => [
                     ['key' => 'service.title', 'description' => 'Service title'],
-                    ['key' => 'service.date', 'description' => 'Captured service date'],
-                    ['key' => 'service.details', 'description' => 'Flattened service summary'],
-                    ['key' => 'fields', 'description' => 'Schema-driven operational fields'],
-                    ['key' => 'finance.line_total', 'description' => 'Formatted line total'],
+                    ['key' => 'service.date', 'description' => 'Service date'],
+                    ['key' => 'service.time', 'description' => 'Service time'],
+                    ['key' => 'service.details', 'description' => 'Service detail summary'],
+                    ['key' => 'service.confirmation', 'description' => 'Confirmation value'],
+                    ['key' => 'finance.line_total', 'description' => 'Formatted row total'],
                 ],
             ],
-            [
-                'key' => 'schema_vectors',
-                'description' => 'ARRAY: Schema vector identities tied to the service record rows',
-                'example' => '[Loop Target]',
-                'is_array' => true,
-                'children' => [
-                    ['key' => 'service_code', 'description' => 'Schema vector code'],
-                    ['key' => 'service_name', 'description' => 'Schema vector display name'],
-                    ['key' => 'version', 'description' => 'Schema vector version used at capture time'],
-                ],
-            ],
+        ];
+    }
+
+    private static function getLetterVariables(): array
+    {
+        return [
+            ['key' => 'letter.reference_no', 'description' => 'Letter reference number', 'example' => 'LTR-2026-014'],
+            ['key' => 'letter.date', 'description' => 'Letter issue date', 'example' => '19 May 2026'],
+            ['key' => 'letter.recipient_name', 'description' => 'Recipient name', 'example' => 'Ms. Farah Azlan'],
+            ['key' => 'letter.recipient_title', 'description' => 'Recipient title', 'example' => 'Corporate Travel Lead'],
+            ['key' => 'letter.recipient_company', 'description' => 'Recipient company', 'example' => 'Acme Corporation Sdn Bhd'],
+            ['key' => 'letter.recipient_address', 'description' => 'Recipient address block', 'example' => "Suite 101, Innovation Tower\nCyberjaya, Selangor"],
+            ['key' => 'letter.subject', 'description' => 'Subject line', 'example' => 'Travel Arrangement Confirmation'],
+            ['key' => 'letter.salutation', 'description' => 'Opening salutation', 'example' => 'Dear Ms. Farah,'],
+            ['key' => 'letter.body', 'description' => 'Main body text for a formal letter', 'example' => "Paragraph one.\n\nParagraph two."],
+            ['key' => 'letter.closing', 'description' => 'Closing phrase', 'example' => 'Yours faithfully,'],
+            ['key' => 'letter.signature_name', 'description' => 'Signer name', 'example' => 'Bayam Travel Operations'],
+            ['key' => 'letter.signature_title', 'description' => 'Signer role', 'example' => 'Corporate Travel Desk'],
+        ];
+    }
+
+    private static function getMemoVariables(): array
+    {
+        return [
+            ['key' => 'memo.reference_no', 'description' => 'Memo reference number', 'example' => 'MEMO-2026-009'],
+            ['key' => 'memo.date', 'description' => 'Memo date', 'example' => '19 May 2026'],
+            ['key' => 'memo.to', 'description' => 'Memo recipient line', 'example' => 'All Travel Operations Staff'],
+            ['key' => 'memo.from', 'description' => 'Memo sender line', 'example' => 'Agency Admin Office'],
+            ['key' => 'memo.subject', 'description' => 'Memo subject', 'example' => 'Updated Service Record Capture Standard'],
+            ['key' => 'memo.body', 'description' => 'Memo body content', 'example' => "Please ensure every service record includes...\n\nThis memo is effective immediately."],
+            ['key' => 'memo.footer_note', 'description' => 'Optional footer note', 'example' => 'This memo is effective immediately.'],
+        ];
+    }
+
+    private static function getReplyVariables(): array
+    {
+        return [
+            ['key' => 'reply.reference_no', 'description' => 'Reply reference number', 'example' => 'RPL-2026-003'],
+            ['key' => 'reply.date', 'description' => 'Reply date', 'example' => '19 May 2026'],
+            ['key' => 'reply.to', 'description' => 'Reply recipient', 'example' => 'Procurement Unit'],
+            ['key' => 'reply.attention', 'description' => 'Attention line', 'example' => 'Mr. Hafiz Rahman'],
+            ['key' => 'reply.subject', 'description' => 'Reply subject', 'example' => 'Reply to Document Clarification Request'],
+            ['key' => 'reply.opening', 'description' => 'Opening line', 'example' => 'We refer to your clarification request...'],
+            ['key' => 'reply.body', 'description' => 'Reply body text', 'example' => "The attached service record and invoice reflect...\n\nPlease review the enclosed supporting note."],
+            ['key' => 'reply.closing', 'description' => 'Closing line', 'example' => 'Thank you.'],
+            ['key' => 'reply.signature_name', 'description' => 'Signer name', 'example' => 'Document Control Desk'],
         ];
     }
 }

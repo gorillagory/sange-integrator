@@ -1,0 +1,12 @@
+bayam.test:53 {
+    log
+    errors
+    file /zones/db.bayam.test bayam.test
+}
+
+.:53 {
+    log
+    errors
+    cache 30
+    forward . 1.1.1.1 1.0.0.1
+}

@@ -3,6 +3,7 @@
 namespace App\Actions\ServiceRecords;
 
 use App\Models\Company;
+use App\Models\Client;
 use App\Models\SchemaVector;
 use App\Models\ServiceRecord;
 use App\Models\ServiceRecordRow;
@@ -32,7 +33,8 @@ class CreateServiceRecordAction
         $vectorsByCode = $vectors->keyBy(fn (SchemaVector $vector) => $vector->service_code ?: $vector->service_type);
 
         return DB::connection('tenant')->transaction(function () use ($validated, $company, $vectorsById, $vectorsByCode, $serviceGroup) {
-            $referenceNo = 'SRV-' . date('Ym') . '-' . strtoupper(Str::random(5));
+            $client = Client::query()->find($validated['client_id']);
+            $referenceNo = $this->makeServiceNumber($client);
             $totalAmount = 0;
 
             $serviceRecord = ServiceRecord::query()->create([
@@ -43,8 +45,11 @@ class CreateServiceRecordAction
                 'contract_no' => $validated['contract_no'],
                 'client_remark_preset_id' => $validated['client_remark_preset_id'] ?? null,
                 'remarks' => $validated['remarks'] ?? null,
+                'created_by_user_id' => $validated['created_by_user_id'] ?? null,
+                'assigned_user_id' => $validated['assigned_user_id'] ?? null,
                 'total_amount' => 0,
                 'status' => 'Draft',
+                'service_status' => 'Pending',
             ]);
 
             foreach ($validated['rows'] as $index => $item) {
@@ -146,6 +151,21 @@ class CreateServiceRecordAction
 
             return $serviceRecord->fresh(['client', 'rows.schemaVector']);
         });
+    }
+
+    private function makeServiceNumber(?Client $client): string
+    {
+        $initials = collect(preg_split('/[^A-Za-z0-9]+/', (string) ($client?->name ?? 'client')) ?: [])
+            ->filter()
+            ->map(fn (string $part) => strtoupper(Str::substr($part, 0, 1)))
+            ->take(6)
+            ->implode('');
+
+        if ($initials === '') {
+            $initials = 'SR';
+        }
+
+        return $initials.'-'.now()->format('ymd').'-'.str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
     }
 
     private function resolveUnitName(?SchemaVector $vector): string

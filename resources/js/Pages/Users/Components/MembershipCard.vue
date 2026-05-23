@@ -50,6 +50,13 @@
                     Tenant Roles
                 </div>
 
+                <div
+                    v-if="membership.company_id && !tenantRoles.length"
+                    class="mb-3 rounded-2xl border border-dashed border-white/10 bg-slate-900 px-4 py-4 text-sm text-slate-500"
+                >
+                    No tenant roles are configured for this company yet.
+                </div>
+
                 <div v-if="tenantRoles.length" class="grid gap-3 md:grid-cols-2">
                     <button
                         v-for="role in tenantRoles"

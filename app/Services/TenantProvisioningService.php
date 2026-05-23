@@ -13,6 +13,10 @@ use Throwable;
 
 class TenantProvisioningService
 {
+    public function __construct(
+        private readonly RbacMatrixService $rbacMatrix,
+    ) {}
+
     public function provision(array $validated): array
     {
         $createdMainGroupId = null;
@@ -37,6 +41,7 @@ class TenantProvisioningService
 
             $this->createTenantDatabase($company->db_name);
             $this->runTenantMigrations($company);
+            $this->rbacMatrix->bootstrapTenantRoles((int) $company->id);
 
             return [$mainGroup, $company];
         } catch (Throwable $exception) {

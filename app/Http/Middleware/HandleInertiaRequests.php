@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Company;
+use App\Services\RbacMatrixService;
 use App\Support\AppHost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,7 +51,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user() ? [
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
+                    'username' => $request->user()->username,
                     'email' => $request->user()->email,
+                    'digital_id' => $request->user()->digital_id,
+                    'image_url' => $request->user()->image_url,
                 ] : null,
                 'rbac' => $rbac,
             ],
@@ -78,33 +82,26 @@ class HandleInertiaRequests extends Middleware
         $systemHosts = [AppHost::systemHost(), $baseDomain, 'localhost', '127.0.0.1'];
         $isSystemHost = in_array($host, $systemHosts, true);
 
-        $currentCompany = view()->shared('currentCompany');
-        $company = is_object($currentCompany) ? $currentCompany : null;
+        $company = $this->resolveCurrentCompany($request);
 
         if (! $company) {
             $subdomain = AppHost::extractSubdomain($host);
 
             if ($subdomain !== null && $subdomain !== '') {
                 $company = Company::query()
-                    ->select(['id', 'name', 'subdomain', 'logo_path', 'theme_color', 'is_active'])
+                    ->select(['id', 'name', 'subdomain', 'main_group_company_id', 'logo_path', 'theme_color', 'is_active'])
                     ->whereRaw('LOWER(TRIM(subdomain)) = ?', [$subdomain])
                     ->where('is_active', true)
                     ->first();
             }
         }
 
-        $logoPath = $company?->logo_path;
-        $logoUrl = null;
-
-        if (is_string($logoPath) && $logoPath !== '') {
-            if (Str::startsWith($logoPath, ['http://', 'https://'])) {
-                $logoUrl = $logoPath;
-            } else {
-                $logoUrl = Str::startsWith($logoPath, '/storage/')
-                    ? $logoPath
-                    : '/storage/'.ltrim(Str::replaceFirst('storage/', '', $logoPath), '/');
-            }
+        if ($company) {
+            $company->loadMissing('mainGroupCompany');
         }
+
+        $logoUrl = $this->normalizePublicAssetUrl($company?->logo_path);
+        $mainGroupLogoUrl = $this->normalizePublicAssetUrl($company?->mainGroupCompany?->logo_path);
 
         return [
             'host' => $host,
@@ -119,10 +116,30 @@ class HandleInertiaRequests extends Middleware
                 'subdomain' => $company->subdomain,
                 'host' => AppHost::tenantHost($company->subdomain),
                 'logo_url' => $logoUrl,
+                'main_group' => $company->mainGroupCompany ? [
+                    'id' => $company->mainGroupCompany->id,
+                    'name' => $company->mainGroupCompany->name,
+                    'logo_url' => $mainGroupLogoUrl,
+                ] : null,
                 'theme_color' => $company->theme_color ?: '#4f46e5',
             ] : null,
             'favicon_url' => $logoUrl ?: '/favicon.ico',
         ];
+    }
+
+    private function normalizePublicAssetUrl(?string $path): ?string
+    {
+        if (! is_string($path) || trim($path) === '') {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://', 'data:'])) {
+            return $path;
+        }
+
+        return Str::startsWith($path, '/storage/')
+            ? $path
+            : '/storage/'.ltrim(Str::replaceFirst('storage/', '', $path), '/');
     }
 
     private function buildRbacContext(Request $request): array
@@ -133,6 +150,7 @@ class HandleInertiaRequests extends Middleware
             return [
                 'global_roles' => [],
                 'tenant_roles' => [],
+                'tenant_permissions' => [],
                 'tenant_modules' => [],
                 'is_super_admin' => false,
                 'is_system_admin' => false,
@@ -141,6 +159,7 @@ class HandleInertiaRequests extends Middleware
                     'companies' => false,
                     'blueprints' => false,
                     'users' => false,
+                    'rbac' => false,
                     'audit_logs' => false,
                 ],
                 'tenant_nav' => [
@@ -150,17 +169,19 @@ class HandleInertiaRequests extends Middleware
                     'reports' => false,
                     'schemas' => false,
                     'documents' => false,
+                    'rbac' => false,
                 ],
             ];
         }
 
         $globalRoles = $this->getRoleNamesByScope((int) $user->id, $user->getMorphClass(), 0);
-        $currentCompany = view()->shared('currentCompany');
-        $companyId = is_object($currentCompany) && isset($currentCompany->id)
-            ? (int) $currentCompany->id
-            : 0;
+        $currentCompany = $this->resolveCurrentCompany($request);
+        $companyId = $currentCompany?->id ? (int) $currentCompany->id : 0;
         $tenantRoles = $companyId > 0
             ? $this->getRoleNamesByScope((int) $user->id, $user->getMorphClass(), $companyId)
+            : [];
+        $tenantPermissionNames = $companyId > 0
+            ? app(RbacMatrixService::class)->tenantPermissionNames()
             : [];
         $tenantModules = $companyId > 0 ? $this->getTenantModules($companyId) : [];
 
@@ -170,13 +191,31 @@ class HandleInertiaRequests extends Middleware
         $hasBookingModule = in_array('travel.booking', $tenantModules, true);
         $hasSchemasModule = in_array('travel.schemas', $tenantModules, true);
         $hasDocumentsModule = in_array('travel.documents', $tenantModules, true);
+        $hasResolvedModules = $companyId > 0 && ! empty($tenantModules);
 
-        $hasAgencyAdminRole = in_array('agency_admin', $tenantRoles, true);
-        $hasDocumentManagerRole = in_array('document_manager', $tenantRoles, true);
+        $tenantPermissions = $companyId > 0
+            ? collect($tenantPermissionNames)
+                ->filter(fn (string $permission) => $user->can($permission))
+                ->values()
+                ->all()
+            : [];
+
+        if ($companyId > 0 && $tenantPermissions === [] && $tenantRoles !== []) {
+            $tenantPermissions = collect($tenantRoles)
+                ->flatMap(fn (string $roleName) => config("rbac.tenant_role_permissions.{$roleName}", []))
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        if ($companyId > 0 && ($isSuperAdmin || $isSystemAdmin)) {
+            $tenantPermissions = $tenantPermissionNames;
+        }
 
         return [
             'global_roles' => $globalRoles,
             'tenant_roles' => $tenantRoles,
+            'tenant_permissions' => $tenantPermissions,
             'tenant_modules' => $tenantModules,
             'is_super_admin' => $isSuperAdmin,
             'is_system_admin' => $isSystemAdmin,
@@ -185,15 +224,22 @@ class HandleInertiaRequests extends Middleware
                 'companies' => $isSuperAdmin,
                 'blueprints' => $isSuperAdmin || $isSystemAdmin,
                 'users' => $isSuperAdmin,
+                'rbac' => $isSuperAdmin || $isSystemAdmin,
                 'audit_logs' => $isSuperAdmin || $isSystemAdmin,
             ],
             'tenant_nav' => [
-                'dashboard' => $companyId > 0,
-                'operations' => $isSuperAdmin || $hasBookingModule,
-                'clients' => $isSuperAdmin || $hasBookingModule,
-                'reports' => $isSuperAdmin || $hasBookingModule,
-                'schemas' => $isSuperAdmin || ($hasSchemasModule && $hasAgencyAdminRole),
-                'documents' => $isSuperAdmin || ($hasDocumentsModule && ($hasAgencyAdminRole || $hasDocumentManagerRole)),
+                'dashboard' => $companyId > 0 && ($isSuperAdmin || in_array('tenant.dashboard.view', $tenantPermissions, true)),
+                'operations' => ($isSuperAdmin || in_array('service_records.view', $tenantPermissions, true))
+                    && (! $hasResolvedModules || $hasBookingModule),
+                'clients' => ($isSuperAdmin || in_array('clients.view', $tenantPermissions, true))
+                    && (! $hasResolvedModules || $hasBookingModule),
+                'reports' => ($isSuperAdmin || in_array('reports.view', $tenantPermissions, true))
+                    && (! $hasResolvedModules || $hasBookingModule),
+                'schemas' => ($isSuperAdmin || in_array('schemas.view', $tenantPermissions, true))
+                    && (! $hasResolvedModules || $hasSchemasModule),
+                'documents' => ($isSuperAdmin || in_array('documents.view', $tenantPermissions, true))
+                    && (! $hasResolvedModules || $hasDocumentsModule),
+                'rbac' => $companyId > 0 && ($isSuperAdmin || in_array('rbac.view', $tenantPermissions, true)),
             ],
         ];
     }
@@ -231,5 +277,32 @@ class HandleInertiaRequests extends Middleware
             ->pluck('modules.key')
             ->values()
             ->all();
+    }
+
+    private function resolveCurrentCompany(Request $request): ?Company
+    {
+        $appCompany = app()->bound('currentCompany') ? app('currentCompany') : null;
+
+        if ($appCompany instanceof Company) {
+            return $appCompany;
+        }
+
+        $viewCompany = view()->shared('currentCompany');
+
+        if ($viewCompany instanceof Company) {
+            return $viewCompany;
+        }
+
+        $subdomain = $request->route('subdomain');
+
+        if (is_string($subdomain) && trim($subdomain) !== '') {
+            return Company::query()
+                ->select(['id', 'name', 'subdomain', 'main_group_company_id', 'logo_path', 'theme_color', 'is_active'])
+                ->whereRaw('LOWER(TRIM(subdomain)) = ?', [trim(strtolower($subdomain))])
+                ->where('is_active', true)
+                ->first();
+        }
+
+        return null;
     }
 }

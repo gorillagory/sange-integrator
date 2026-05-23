@@ -26,8 +26,11 @@ class ServiceRecord extends Model
         'contract_no',
         'client_remark_preset_id',
         'remarks',
+        'created_by_user_id',
+        'assigned_user_id',
         'total_amount',
         'status',
+        'service_status',
     ];
 
     protected $appends = [
@@ -38,8 +41,18 @@ class ServiceRecord extends Model
     {
         return [
             'client_remark_preset_id' => 'integer',
+            'created_by_user_id' => 'integer',
+            'assigned_user_id' => 'integer',
             'total_amount' => 'decimal:2',
         ];
+    }
+
+    protected function documentStatus(): Attribute
+    {
+        return Attribute::make(
+            get: fn (mixed $value, array $attributes) => $attributes['status'] ?? 'Draft',
+            set: fn (mixed $value) => ['status' => $value],
+        );
     }
 
     protected function documentNo(): Attribute
@@ -81,6 +94,16 @@ class ServiceRecord extends Model
         return $this->belongsTo(ClientRemarkPreset::class, 'client_remark_preset_id');
     }
 
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
     public function rows(): HasMany
     {
         return $this->hasMany(ServiceRecordRow::class)->orderBy('sort_order');
@@ -99,5 +122,10 @@ class ServiceRecord extends Model
     public function services(): HasMany
     {
         return $this->rows();
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(ServiceRecordDocument::class)->latest('generated_at');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Company;
 use App\Services\AuditEngine;
 use App\Services\AuthRedirectService;
+use App\Services\RbacMatrixService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,7 +40,7 @@ class IdentifyTenant
 
         app(PermissionRegistrar::class)->setPermissionsTeamId(0);
 
-        $isSuperAdmin = $user->isSuperAdmin();
+        $isSystemUser = $user->isSystemUser();
 
         $hasMembership = DB::connection('control')
             ->table('company_user')
@@ -47,7 +48,7 @@ class IdentifyTenant
             ->where('company_id', $company->id)
             ->exists();
 
-        if (! $isSuperAdmin && ! $hasMembership) {
+        if (! $isSystemUser && ! $hasMembership) {
             /** @var \App\Services\AuthRedirectService $redirectService */
             $redirectService = app(AuthRedirectService::class);
 
@@ -74,6 +75,7 @@ class IdentifyTenant
         Config::set('database.default', 'tenant');
 
         app(PermissionRegistrar::class)->setPermissionsTeamId($company->id);
+        app(RbacMatrixService::class)->syncForCompany($company->id);
 
         app()->instance('currentCompany', $company);
         view()->share('currentCompany', $company);

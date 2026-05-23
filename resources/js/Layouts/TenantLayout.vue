@@ -184,8 +184,14 @@
 
             <div class="mx-4 mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-white/80">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white">
-                        {{ userInitials }}
+                    <div class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white/10 text-sm font-bold text-white">
+                        <img
+                            v-if="currentUser?.image_url"
+                            :src="currentUser.image_url"
+                            :alt="`${currentUser.name} avatar`"
+                            class="h-full w-full object-cover"
+                        >
+                        <span v-else>{{ userInitials }}</span>
                     </div>
 
                     <div
@@ -311,13 +317,13 @@ const resolvedTenantNav = computed(() => {
     };
 });
 
-const companyName = computed(() => currentCompany.value?.name || 'Tenant Workspace');
-const companyHost = computed(() => brand.value?.tenant?.host || currentCompany.value?.subdomain || 'tenant');
+const companyName = computed(() => currentCompany.value?.name || brand.value?.tenant?.name || 'Tenant Workspace');
+const companyHost = computed(() => brand.value?.tenant?.host || currentCompany.value?.subdomain || brand.value?.host || 'tenant');
 const companyInitial = computed(() => companyName.value.charAt(0).toUpperCase());
 const tenantFaviconUrl = computed(() => brand.value?.favicon_url || companyLogoUrl.value || '/favicon.ico');
 
 const companyLogoUrl = computed(() => {
-    const path = currentCompany.value?.logo_path;
+    const path = currentCompany.value?.logo_path || brand.value?.tenant?.logo_url;
 
     if (!path) {
         return null;
@@ -332,7 +338,7 @@ const companyLogoUrl = computed(() => {
         : `/storage/${String(path).replace(/^storage\//, '')}`;
 });
 
-const brand500 = computed(() => normalizeHex(currentCompany.value?.theme_color || '#4f46e5'));
+const brand500 = computed(() => normalizeHex(currentCompany.value?.theme_color || brand.value?.tenant?.theme_color || '#4f46e5'));
 const brand600 = computed(() => darkenHex(brand500.value, 0.12));
 const brand700 = computed(() => darkenHex(brand500.value, 0.22));
 const brand50 = computed(() => tintHex(brand500.value, 0.92));
@@ -401,6 +407,13 @@ const adminNav = computed(() => [
         icon: 'M12 2L2 7l10 5 10-5-10-5zm0 9L2 6m10 14l10-5m-10 5v-9',
         active: isActive('/admin/schemas'),
         allowed: Boolean(resolvedTenantNav.value?.schemas),
+    },
+    {
+        href: '/admin/rbac',
+        label: 'RBAC Studio',
+        icon: 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422A12.083 12.083 0 0120 17.944M12 14L5.84 10.578A12.084 12.084 0 004 17.944M12 14v7',
+        active: isActive('/admin/rbac'),
+        allowed: Boolean(resolvedTenantNav.value?.rbac),
     },
     {
         href: '/admin/documents',

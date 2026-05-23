@@ -41,6 +41,47 @@
                     v-model:contractNo="form.contract_no"
                 />
 
+                <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <div class="mb-6 flex items-center gap-2">
+                        <div class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-100)] text-xs font-bold text-[var(--brand-700)]">
+                            2
+                        </div>
+                        <h3 class="font-bold text-gray-900">User Identity & Assignment</h3>
+                    </div>
+
+                    <div class="grid gap-5 md:grid-cols-2">
+                        <div class="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                            <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Author</div>
+                            <div class="mt-2 text-sm font-bold text-gray-900">{{ currentUser?.name || 'Current user' }}</div>
+                            <div class="mt-1 text-xs text-gray-500">{{ currentUser?.email || 'Will be attached automatically on save.' }}</div>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-bold uppercase text-gray-600">
+                                Assigned Personnel <span class="text-red-500">*</span>
+                            </label>
+                            <select
+                                v-model="form.assigned_user_id"
+                                class="w-full rounded-lg px-4 py-2.5 text-sm text-gray-900"
+                                :class="fieldError('assigned_user_id') ? 'border border-amber-300 bg-amber-50/70 focus:border-amber-400' : 'border border-gray-300 bg-white focus:border-[var(--brand-500)]'"
+                            >
+                                <option :value="null" disabled>Select assignee...</option>
+                                <option v-for="user in visibleAssignmentUsers" :key="user.id" :value="user.id">
+                                    {{ user.name }}{{ user.role ? ` · ${user.role}` : '' }}
+                                </option>
+                            </select>
+                            <p class="mt-2 text-xs text-gray-500">
+                                {{ canAssignTeam
+                                    ? 'Agency admins and super admins can route this record to themselves or any available team member.'
+                                    : 'Your role can only keep the record assigned to yourself.' }}
+                            </p>
+                            <p v-if="fieldError('assigned_user_id')" class="mt-2 text-xs font-medium text-amber-700">
+                                {{ fieldError('assigned_user_id') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <RemarksCard
                     :client="selectedClient"
                     :presets="remarkPresets"
@@ -66,7 +107,7 @@
                 >
                     <div class="mb-6 flex items-center gap-2">
                         <div class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-100)] text-xs font-bold text-[var(--brand-700)]">
-                            3
+                            4
                         </div>
                         <h3 class="font-bold text-gray-900">Schema Vector Rows & Commercial Values</h3>
                     </div>
@@ -203,6 +244,18 @@ const props = defineProps({
         type: String,
         default: 'create',
     },
+    assignmentUsers: {
+        type: Array,
+        default: () => [],
+    },
+    canAssignTeam: {
+        type: Boolean,
+        default: false,
+    },
+    currentUser: {
+        type: Object,
+        default: null,
+    },
 });
 
 const { addToast } = useToast();
@@ -228,6 +281,7 @@ const form = useForm({
     contract_no: props.serviceRecord?.contract_no || null,
     client_remark_preset_id: props.serviceRecord?.client_remark_preset_id || null,
     remarks: props.serviceRecord?.remarks || '',
+    assigned_user_id: props.serviceRecord?.assigned_user_id || props.currentUser?.id || null,
     rows: props.serviceRecord ? hydrateRows(props.serviceRecord.rows || []) : [],
 });
 
@@ -239,6 +293,25 @@ const remarkPresets = computed(() => {
     return Array.isArray(selectedClient.value?.remark_presets)
         ? selectedClient.value.remark_presets
         : [];
+});
+
+const visibleAssignmentUsers = computed(() => {
+    const users = Array.isArray(props.assignmentUsers) ? [...props.assignmentUsers] : [];
+
+    if (
+        form.assigned_user_id
+        && !users.some((user) => String(user.id) === String(form.assigned_user_id))
+        && props.serviceRecord?.assigned_user
+    ) {
+        users.unshift({
+            id: props.serviceRecord.assigned_user.id,
+            name: props.serviceRecord.assigned_user.name,
+            email: props.serviceRecord.assigned_user.email,
+            role: 'Current Assignee',
+        });
+    }
+
+    return users;
 });
 
 watch(
@@ -306,6 +379,10 @@ const globalErrors = computed(() => {
     if (!form.rows.length) {
         errors.rows = 'Add at least one schema vector row before creating the service record.';
         errors.selectedSchemaVectorId = 'Pick a schema vector and add it to the record.';
+    }
+
+    if (!form.assigned_user_id) {
+        errors.assigned_user_id = 'Choose the assigned personnel for this service record.';
     }
 
     Object.entries(form.errors || {}).forEach(([key, value]) => {
@@ -379,6 +456,10 @@ const validationSummary = computed(() => {
 
     if (topLevelErrors.rows) {
         items.push('Add at least one schema vector row.');
+    }
+
+    if (topLevelErrors.assigned_user_id) {
+        items.push('Choose the assigned personnel.');
     }
 
     form.rows.forEach((row, index) => {
@@ -482,6 +563,7 @@ function submitServiceRecord() {
         contract_no: data.contract_no,
         client_remark_preset_id: data.client_remark_preset_id,
         remarks: data.remarks || null,
+        assigned_user_id: data.assigned_user_id,
         rows: data.rows.map((row) => ({
             schema_vector_id: row.schema_vector_id ?? null,
             service_code: row.service_code,

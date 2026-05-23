@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\AuditEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -36,6 +38,14 @@ class PasswordResetLinkController extends Controller
         $status = Password::sendResetLink(
             $request->only('email')
         );
+
+        if ($status === Password::RESET_LINK_SENT) {
+            $user = User::query()->where('email', $request->string('email'))->first();
+
+            AuditEngine::log('AUTH', 'AUTH.PASSWORD_RESET_LINK_REQUESTED', [
+                'email' => (string) $request->string('email'),
+            ], [], $user);
+        }
 
         return $status == Password::RESET_LINK_SENT
                     ? back()->with('status', __($status))

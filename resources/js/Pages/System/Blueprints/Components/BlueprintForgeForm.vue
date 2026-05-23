@@ -14,16 +14,29 @@
                 </p>
             </div>
 
-            <button
-                @click="attemptSave"
-                :disabled="form.processing"
-                class="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-500 disabled:opacity-50"
-                :class="{ 'animate-shake bg-red-600 hover:bg-red-600': isShaking }"
-            >
-                <svg v-if="!form.processing" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                <svg v-else class="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                {{ isEditing ? 'Publish Updated Vector' : 'Publish Master Vector' }}
-            </button>
+            <div class="flex flex-wrap gap-3">
+                <button
+                    @click="attemptSave('save')"
+                    :disabled="form.processing"
+                    class="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/10 disabled:opacity-50"
+                    :class="{ 'animate-shake border-red-500 bg-red-600 hover:bg-red-600': isShaking }"
+                >
+                    <svg v-if="!form.processing" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5v14"></path></svg>
+                    <svg v-else class="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Save
+                </button>
+
+                <button
+                    @click="attemptSave('publish')"
+                    :disabled="form.processing"
+                    class="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-500 disabled:opacity-50"
+                    :class="{ 'animate-shake bg-red-600 hover:bg-red-600': isShaking }"
+                >
+                    <svg v-if="!form.processing" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    <svg v-else class="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    {{ isEditing ? 'Save & Publish Updated Vector' : 'Save & Publish Master Vector' }}
+                </button>
+            </div>
         </div>
 
         <div class="mb-8 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 px-6 py-4 text-sm text-indigo-100">
@@ -258,7 +271,7 @@ const removeUnit = (index) => {
     form.pricing_units.splice(index, 1);
 };
 
-const attemptSave = () => {
+const attemptSave = (saveMode = 'publish') => {
     if (hasGlobalDuplicates.value) {
         isShaking.value = true;
         setTimeout(() => {
@@ -273,6 +286,7 @@ const attemptSave = () => {
         service_name: form.service_name,
         service_code: form.service_code,
         service_type: form.service_type || form.service_code,
+        save_mode: saveMode,
         schema_payload: JSON.parse(compiledJson.value),
     };
 

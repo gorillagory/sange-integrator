@@ -9,6 +9,8 @@ use App\Models\ClientRemarkPreset;
 use App\Models\Contract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ClientController extends Controller
@@ -30,7 +32,8 @@ class ClientController extends Controller
                     ->orderBy('contract_no');
             }])
             ->orderBy('name', 'asc')
-            ->paginate(10);
+            ->paginate(10)
+            ->through(fn (Client $client) => $this->presentClient($client));
 
         return Inertia::render('Clients/Index', [
             'clients' => $clients,
@@ -41,7 +44,7 @@ class ClientController extends Controller
     {
         $globalClients = Client::query()
             ->orderBy('name')
-            ->get(['id', 'name', 'registration_number']);
+            ->get(['id', 'name', 'registration_number', 'logo_path', 'address', 'profile']);
 
         return Inertia::render('Clients/Create', [
             'globalClients' => $globalClients,
@@ -60,6 +63,9 @@ class ClientController extends Controller
             'registration_number' => 'nullable|string|max:100',
             'hq_contact_person' => 'required_if:selection_mode,new|nullable|string|max:255',
             'hq_contact_email' => 'required_if:selection_mode,new|nullable|email|max:255',
+            'address' => 'nullable|string|max:5000',
+            'profile' => 'nullable|string|max:5000',
+            'logo' => 'nullable|image|max:3072',
 
             'contracts' => 'required|array|min:1',
             'contracts.*.contract_no' => 'required|string|max:100|unique:tenant.contracts,contract_no',
@@ -69,11 +75,18 @@ class ClientController extends Controller
         ]);
 
         if ($validated['selection_mode'] === 'new') {
+            $logoPath = ($request->file('logo') instanceof UploadedFile)
+                ? $this->storeLogo($request->file('logo'), 'client-logos')
+                : null;
+
             $client = Client::query()->create([
                 'name' => $validated['name'],
                 'registration_number' => $validated['registration_number'] ?? null,
                 'hq_contact_person' => $validated['hq_contact_person'],
                 'hq_contact_email' => $validated['hq_contact_email'],
+                'address' => $validated['address'] ?? null,
+                'profile' => $validated['profile'] ?? null,
+                'logo_path' => $logoPath,
             ]);
         } else {
             $client = Client::query()->findOrFail($validated['client_id']);
@@ -93,6 +106,38 @@ class ClientController extends Controller
         return redirect()->route('clients.index', [
             'subdomain' => request()->route('subdomain'),
         ])->with('success', 'Corporate Client and Local Contracts successfully onboarded.');
+    }
+
+    public function update(Request $request, $subdomain, Client $client)
+    {
+        $this->assertClientAvailableToTenant($client);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:control.clients,name,'.$client->id],
+            'registration_number' => ['nullable', 'string', 'max:100'],
+            'hq_contact_person' => ['nullable', 'string', 'max:255'],
+            'hq_contact_email' => ['nullable', 'email', 'max:255'],
+            'address' => ['nullable', 'string', 'max:5000'],
+            'profile' => ['nullable', 'string', 'max:5000'],
+            'logo' => ['nullable', 'image', 'max:3072'],
+        ]);
+
+        $logoPath = $client->logo_path;
+        if ($request->file('logo') instanceof UploadedFile) {
+            $logoPath = $this->storeLogo($request->file('logo'), 'client-logos');
+        }
+
+        $client->update([
+            'name' => trim($validated['name']),
+            'registration_number' => $validated['registration_number'] ? trim($validated['registration_number']) : null,
+            'hq_contact_person' => $validated['hq_contact_person'] ? trim($validated['hq_contact_person']) : null,
+            'hq_contact_email' => $validated['hq_contact_email'] ? Str::lower(trim($validated['hq_contact_email'])) : null,
+            'address' => $validated['address'] ? trim($validated['address']) : null,
+            'profile' => $validated['profile'] ? trim($validated['profile']) : null,
+            'logo_path' => $logoPath,
+        ]);
+
+        return back()->with('success', 'Client identity updated successfully.');
     }
 
     public function storeRemarkPreset(Request $request, Client $client): JsonResponse
@@ -175,6 +220,36 @@ class ClientController extends Controller
             'content' => $preset->content,
             'is_active' => (bool) $preset->is_active,
             'updated_at' => optional($preset->updated_at)?->toDateTimeString(),
+        ];
+    }
+
+    private function storeLogo(UploadedFile $file, string $folder): string
+    {
+        return $file->store($folder, 'public');
+    }
+
+    private function presentClient(Client $client): array
+    {
+        return [
+            'id' => $client->id,
+            'name' => $client->name,
+            'registration_number' => $client->registration_number,
+            'logo_path' => $client->logo_path,
+            'logo_url' => $client->logo_url,
+            'hq_contact_person' => $client->hq_contact_person,
+            'hq_contact_email' => $client->hq_contact_email,
+            'address' => $client->address,
+            'profile' => $client->profile,
+            'contracts' => $client->contracts
+                ->map(fn (Contract $contract) => [
+                    'id' => $contract->id,
+                    'contract_no' => $contract->contract_no,
+                    'title' => $contract->title,
+                    'billing_address' => $contract->billing_address,
+                    'payment_terms' => $contract->payment_terms,
+                ])
+                ->values()
+                ->all(),
         ];
     }
 }

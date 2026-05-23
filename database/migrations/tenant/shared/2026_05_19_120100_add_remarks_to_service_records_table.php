@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('service_records')) {
+            return;
+        }
+
         Schema::table('service_records', function (Blueprint $table) {
             if (! Schema::hasColumn('service_records', 'client_remark_preset_id')) {
                 $table->unsignedBigInteger('client_remark_preset_id')->nullable()->after('contract_no');
@@ -21,6 +25,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasTable('service_records')) {
+            return;
+        }
+
         Schema::table('service_records', function (Blueprint $table) {
             foreach (['remarks', 'client_remark_preset_id'] as $column) {
                 if (Schema::hasColumn('service_records', $column)) {

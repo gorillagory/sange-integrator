@@ -5,14 +5,34 @@ export const DOCUMENT_FONT_PRESETS = [
         cssFamily: 'Helvetica, Arial, sans-serif',
     },
     {
+        value: 'humanist',
+        label: 'Humanist Sans',
+        cssFamily: "'DejaVu Sans', 'Trebuchet MS', Arial, sans-serif",
+    },
+    {
+        value: 'grotesk',
+        label: 'Grotesk Clean',
+        cssFamily: "'Arial Narrow', Arial, Helvetica, sans-serif",
+    },
+    {
         value: 'serif',
         label: 'Serif Editorial',
         cssFamily: "'Times New Roman', Times, serif",
     },
     {
+        value: 'book',
+        label: 'Book Serif',
+        cssFamily: "'DejaVu Serif', Georgia, serif",
+    },
+    {
         value: 'mono',
         label: 'Mono Clean',
         cssFamily: "'Courier New', Courier, monospace",
+    },
+    {
+        value: 'technical',
+        label: 'Technical Mono',
+        cssFamily: "'DejaVu Sans Mono', 'Courier New', monospace",
     },
 ];
 

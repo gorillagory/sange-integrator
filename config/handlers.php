@@ -22,8 +22,8 @@ return [
                 ],
             ],
             'document_policy' => [
-                'document_types' => ['invoice', 'quote', 'receipt', 'itinerary'],
-                'canonical_roots' => ['service_record', 'service_rows', 'schema_vectors', 'finance', 'client', 'company'],
+                'document_types' => ['invoice', 'quote', 'receipt', 'itinerary', 'letter', 'memo', 'reply'],
+                'canonical_roots' => ['service_record', 'service_rows', 'schema_vectors', 'finance', 'client', 'company', 'main_group', 'document_links', 'remarks'],
             ],
             'extraction_policy' => [
                 'extractor' => App\Services\ServiceRecords\TravelServiceRecordExtractor::class,

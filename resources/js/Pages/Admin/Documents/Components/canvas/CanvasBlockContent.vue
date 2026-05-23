@@ -10,7 +10,7 @@
         </div>
 
         <template v-else-if="node.type === 'image'">
-            <div class="overflow-hidden rounded-xl">
+            <div class="overflow-hidden rounded-xl" :style="imageWrapperStyle">
                 <img
                     v-if="imageSource"
                     :src="imageSource"
@@ -199,6 +199,7 @@ const textStyle = computed(() => ({
     fontWeight: props.node?.styles?.fontWeight || 'normal',
     color: props.node?.styles?.color || '#1f2937',
     textAlign: props.node?.styles?.textAlign || 'left',
+    textTransform: props.node?.styles?.textTransform || 'none',
     margin: props.node?.styles?.margin || '0px',
     backgroundColor: props.node?.styles?.backgroundColor || 'transparent',
     borderRadius: props.node?.styles?.borderRadius || '0px',
@@ -211,6 +212,7 @@ const listStyle = computed(() => ({
     paddingLeft: props.node?.styles?.paddingLeft || '20px',
     fontSize: props.node?.styles?.fontSize || '14px',
     color: props.node?.styles?.color || '#374151',
+    textTransform: props.node?.styles?.textTransform || 'none',
     margin: props.node?.styles?.margin || '10px 0px',
 }));
 
@@ -218,9 +220,16 @@ const imageStyle = computed(() => ({
     width: props.node?.styles?.width || '180px',
     maxWidth: '100%',
     objectFit: props.node?.styles?.objectFit || 'contain',
+    display: 'inline-block',
+}));
+
+const imageWrapperStyle = computed(() => ({
+    textAlign: props.node?.styles?.textAlign || 'left',
     padding: props.node?.styles?.padding || '0px',
     margin: props.node?.styles?.margin || '0px',
-    display: props.node?.styles?.display || 'block',
+    backgroundColor: props.node?.styles?.backgroundColor || 'transparent',
+    borderRadius: props.node?.styles?.borderRadius || '0px',
+    border: props.node?.styles?.border || '0px solid transparent',
 }));
 
 const dividerStyle = computed(() => ({
@@ -237,10 +246,12 @@ const tableWrapperStyle = computed(() => ({
     fontFamily: props.node?.styles?.fontFamily ? resolveDocumentFontCss(props.node.styles.fontFamily) : 'inherit',
     fontSize: props.node?.styles?.fontSize || '12px',
     color: props.node?.styles?.color || '#0f172a',
+    textTransform: props.node?.styles?.textTransform || 'none',
     margin: props.node?.styles?.margin || '0px',
     padding: props.node?.styles?.padding || '0px',
     backgroundColor: props.node?.styles?.backgroundColor || 'transparent',
     borderRadius: props.node?.styles?.borderRadius || '0px',
+    textAlign: props.node?.styles?.textAlign || 'left',
 }));
 
 function formatListItem(item) {

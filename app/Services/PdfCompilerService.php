@@ -79,11 +79,19 @@ class PdfCompilerService
 
                 case 'image':
                     $url = $this->resolveImageSource($node, $dataPayload, $options);
+                    $wrapperStyles = $this->cssArrayToString($this->filterStyles(
+                        $node['styles'] ?? [],
+                        ['margin', 'padding', 'backgroundColor', 'borderRadius', 'border', 'textAlign']
+                    ), $renderMode);
+                    $imageStyles = $this->cssArrayToString($this->filterStyles(
+                        $node['styles'] ?? [],
+                        ['width', 'height', 'objectFit']
+                    ), $renderMode);
 
-                    $html .= '<div style="width: 100%;">';
+                    $html .= '<div style="width: 100%; '.$wrapperStyles.'">';
 
                     if ($url !== '') {
-                        $html .= '<img src="'.$this->escapeAttribute($url).'" style="'.$styles.' max-width: 100%;" />';
+                        $html .= '<img src="'.$this->escapeAttribute($url).'" style="'.$imageStyles.' max-width: 100%; display: inline-block;" />';
                     }
 
                     $html .= '</div>';
@@ -116,6 +124,11 @@ class PdfCompilerService
         $styles = $this->cssArrayToString($node['styles'] ?? [], $renderMode);
         $columns = is_array($node['columns'] ?? null) ? $node['columns'] : [];
         $dataKey = (string) ($node['data_key'] ?? '');
+        $fontSize = $this->escapeAttribute((string) ($node['styles']['fontSize'] ?? '12px'));
+        $fontFamily = $this->escapeAttribute($this->resolveFontFamily((string) ($node['styles']['fontFamily'] ?? 'inherit'), $renderMode));
+        $headerFontSize = $this->escapeAttribute($this->scaleCssSize((string) ($node['styles']['fontSize'] ?? '12px'), 0.85, '10px'));
+        $textColor = $this->escapeAttribute((string) ($node['styles']['color'] ?? '#0f172a'));
+        $mutedColor = $this->escapeAttribute($this->mutedColor((string) ($node['styles']['color'] ?? '#0f172a')));
 
         $loopData = data_get($dataPayload, $dataKey, []);
         $loopData = is_array($loopData) ? $loopData : [];
@@ -125,14 +138,14 @@ class PdfCompilerService
 
         foreach ($columns as $col) {
             $label = $this->escape((string) ($col['label'] ?? 'Column'));
-            $html .= '<th style="border: 1px solid #333; background-color: #f3f4f6; padding: 8px; text-align: left; font-size: 11px; font-weight: bold;">'.$label.'</th>';
+            $html .= '<th style="border: 1px solid #cbd5e1; background-color: #f8fafc; padding: 8px; text-align: left; font-size: '.$headerFontSize.'; font-family: '.$fontFamily.'; font-weight: 700; color: '.$mutedColor.'; text-transform: uppercase; letter-spacing: 0.12em;">'.$label.'</th>';
         }
 
         $html .= '</tr></thead><tbody>';
 
         if ($loopData === []) {
             $colCount = max(1, count($columns));
-            $html .= '<tr><td colspan="'.$colCount.'" style="text-align: center; padding: 10px; color: #999; border: 1px solid #ddd;">No data available</td></tr>';
+            $html .= '<tr><td colspan="'.$colCount.'" style="text-align: center; padding: 10px; color: '.$mutedColor.'; border: 1px solid #cbd5e1; font-size: '.$fontSize.'; font-family: '.$fontFamily.';">No data available</td></tr>';
         } else {
             foreach ($loopData as $row) {
                 $html .= '<tr>';
@@ -141,7 +154,7 @@ class PdfCompilerService
                     $key = (string) ($col['key'] ?? '');
                     $cellValue = data_get($row, $key, '');
 
-                    $html .= '<td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;">'.$this->renderCellValue($cellValue).'</td>';
+                    $html .= '<td style="border: 1px solid #e2e8f0; padding: 8px; vertical-align: top; font-size: '.$fontSize.'; font-family: '.$fontFamily.'; color: '.$textColor.';">'.$this->renderCellValue($cellValue).'</td>';
                 }
 
                 $html .= '</tr>';
@@ -158,6 +171,13 @@ class PdfCompilerService
         $styles = $this->cssArrayToString($node['styles'] ?? [], $renderMode);
         $columns = is_array($node['columns'] ?? null) ? $node['columns'] : [];
         $dataKey = (string) ($node['data_key'] ?? 'invoice.line_items');
+        $fontSize = $this->escapeAttribute((string) ($node['styles']['fontSize'] ?? '12px'));
+        $fontFamily = $this->escapeAttribute($this->resolveFontFamily((string) ($node['styles']['fontFamily'] ?? 'inherit'), $renderMode));
+        $headerFontSize = $this->escapeAttribute($this->scaleCssSize((string) ($node['styles']['fontSize'] ?? '12px'), 0.84, '10px'));
+        $summaryFontSize = $this->escapeAttribute((string) ($node['styles']['fontSize'] ?? '12px'));
+        $grandTotalFontSize = $this->escapeAttribute($this->scaleCssSize((string) ($node['styles']['fontSize'] ?? '12px'), 1.16, '14px'));
+        $textColor = $this->escapeAttribute((string) ($node['styles']['color'] ?? '#0f172a'));
+        $mutedColor = $this->escapeAttribute($this->mutedColor((string) ($node['styles']['color'] ?? '#0f172a')));
 
         $loopData = data_get($dataPayload, $dataKey, []);
         $loopData = is_array($loopData) ? $loopData : [];
@@ -174,13 +194,13 @@ class PdfCompilerService
             $align = $this->invoiceTableColumnAlign($key);
             $padding = $key === 'description' ? '0 16px 10px 0' : '0 0 10px 0';
 
-            $html .= '<th style="width: '.$width.'; border-bottom: 1px solid #cbd5e1; padding: '.$padding.'; text-align: '.$align.'; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #64748b;">'.$label.'</th>';
+            $html .= '<th style="width: '.$width.'; border-bottom: 1px solid #cbd5e1; padding: '.$padding.'; text-align: '.$align.'; font-size: '.$headerFontSize.'; font-family: '.$fontFamily.'; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: '.$mutedColor.';">'.$label.'</th>';
         }
 
         $html .= '</tr></thead><tbody>';
 
         if ($loopData === []) {
-            $html .= '<tr><td colspan="'.max(1, count($columns)).'" style="padding: 12px 0; text-align: center; color: #94a3b8; font-size: 11px;">No items yet</td></tr>';
+            $html .= '<tr><td colspan="'.max(1, count($columns)).'" style="padding: 12px 0; text-align: center; color: '.$mutedColor.'; font-size: '.$fontSize.'; font-family: '.$fontFamily.';">No items yet</td></tr>';
         } else {
             foreach ($loopData as $row) {
                 $html .= '<tr>';
@@ -191,9 +211,10 @@ class PdfCompilerService
                     $align = $this->invoiceTableColumnAlign($key);
                     $padding = $key === 'description' ? '12px 16px 12px 0' : '12px 0';
                     $fontWeight = $key === 'description' ? '600' : '400';
-                    $color = $key === 'description' ? '#0f172a' : '#334155';
+                    $color = $key === 'description' ? $textColor : $mutedColor;
+                    $whiteSpace = $key === 'description' ? 'pre-wrap' : 'normal';
 
-                    $html .= '<td style="border-bottom: 1px solid #e2e8f0; padding: '.$padding.'; vertical-align: top; text-align: '.$align.'; font-size: 12px; font-weight: '.$fontWeight.'; color: '.$color.';">'.$this->renderCellValue($cellValue).'</td>';
+                    $html .= '<td style="border-bottom: 1px solid #e2e8f0; padding: '.$padding.'; vertical-align: top; text-align: '.$align.'; font-size: '.$fontSize.'; font-family: '.$fontFamily.'; font-weight: '.$fontWeight.'; color: '.$color.'; white-space: '.$whiteSpace.';">'.$this->renderCellValue($cellValue).'</td>';
                 }
 
                 $html .= '</tr>';
@@ -203,9 +224,9 @@ class PdfCompilerService
         $html .= '</tbody></table>';
         $html .= '<div style="margin-top: 14px; width: 100%; text-align: right;">';
         $html .= '<table style="width: 260px; margin-left: auto; border-collapse: collapse;">';
-        $html .= '<tr><td style="padding: 4px 0; font-size: 12px; color: #475569;">Subtotal</td><td style="padding: 4px 0; font-size: 12px; font-weight: 600; color: #0f172a; text-align: right;">'.$this->escape((string) $summary['subtotal']).'</td></tr>';
-        $html .= '<tr><td style="padding: 4px 0; font-size: 12px; color: #475569;">Tax</td><td style="padding: 4px 0; font-size: 12px; font-weight: 600; color: #0f172a; text-align: right;">'.$this->escape((string) $summary['tax_total']).'</td></tr>';
-        $html .= '<tr><td style="padding: 10px 0 0; border-top: 1px solid #cbd5e1; font-size: 14px; font-weight: 700; color: #0f172a;">Grand Total</td><td style="padding: 10px 0 0; border-top: 1px solid #cbd5e1; font-size: 14px; font-weight: 700; color: #0f172a; text-align: right;">'.$this->escape((string) $summary['grand_total']).'</td></tr>';
+        $html .= '<tr><td style="padding: 4px 0; font-size: '.$summaryFontSize.'; font-family: '.$fontFamily.'; color: '.$mutedColor.';">Subtotal</td><td style="padding: 4px 0; font-size: '.$summaryFontSize.'; font-family: '.$fontFamily.'; font-weight: 600; color: '.$textColor.'; text-align: right;">'.$this->escape((string) $summary['subtotal']).'</td></tr>';
+        $html .= '<tr><td style="padding: 4px 0; font-size: '.$summaryFontSize.'; font-family: '.$fontFamily.'; color: '.$mutedColor.';">Tax</td><td style="padding: 4px 0; font-size: '.$summaryFontSize.'; font-family: '.$fontFamily.'; font-weight: 600; color: '.$textColor.'; text-align: right;">'.$this->escape((string) $summary['tax_total']).'</td></tr>';
+        $html .= '<tr><td style="padding: 10px 0 0; border-top: 1px solid #cbd5e1; font-size: '.$grandTotalFontSize.'; font-family: '.$fontFamily.'; font-weight: 700; color: '.$textColor.';">Grand Total</td><td style="padding: 10px 0 0; border-top: 1px solid #cbd5e1; font-size: '.$grandTotalFontSize.'; font-family: '.$fontFamily.'; font-weight: 700; color: '.$textColor.'; text-align: right;">'.$this->escape((string) $summary['grand_total']).'</td></tr>';
         $html .= '</table></div></div>';
 
         return $html;
@@ -381,26 +402,11 @@ class PdfCompilerService
     {
         $watermark = '';
         $contentHeight = $this->resolvePrintableContentHeight($page);
-
-        if (! empty($page['watermarkText'])) {
-            $text = $this->escape((string) $page['watermarkText']);
-            $opacity = (float) ($page['watermarkOpacity'] ?? 0.1);
-            $color = $this->escapeAttribute((string) ($page['watermarkColor'] ?? '#e5e7eb'));
-
-            $watermark = '<div class="watermark" style="color: '.$color.'; opacity: '.$opacity.';">'.$text.'</div>';
-        }
-
-        return <<<HTML
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <title>Compiled Document</title>
-            <style>
-                {$pageStyles}
-                html, body { height: 100%; }
+        $footerReserve = trim($footer) !== '' ? '18mm' : '0mm';
+        $shellStyles = $renderMode === 'browser'
+            ? '
                 .document-shell {
-                    min-height: {$contentHeight};
+                    min-height: '.$contentHeight.';
                     display: flex;
                     flex-direction: column;
                     width: 100%;
@@ -421,6 +427,49 @@ class PdfCompilerService
                     flex: 0 0 auto;
                     margin-top: auto;
                 }
+            '
+            : '
+                .document-shell {
+                    width: 100%;
+                    min-height: '.$contentHeight.';
+                }
+                .document-header,
+                .document-main,
+                .document-footer {
+                    width: 100%;
+                }
+                .document-main {
+                    padding-bottom: '.$footerReserve.';
+                }
+                .document-footer {
+                    position: fixed;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                }
+                .document-section-inner {
+                    width: 100%;
+                }
+            ';
+
+        if (! empty($page['watermarkText'])) {
+            $text = $this->escape((string) $page['watermarkText']);
+            $opacity = (float) ($page['watermarkOpacity'] ?? 0.1);
+            $color = $this->escapeAttribute((string) ($page['watermarkColor'] ?? '#e5e7eb'));
+
+            $watermark = '<div class="watermark" style="color: '.$color.'; opacity: '.$opacity.';">'.$text.'</div>';
+        }
+
+        return <<<HTML
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>Compiled Document</title>
+            <style>
+                {$pageStyles}
+                html, body { height: 100%; }
+                {$shellStyles}
                 .watermark {
                     position: fixed;
                     top: 40%;
@@ -437,9 +486,9 @@ class PdfCompilerService
         <body>
             {$watermark}
             <div class="document-shell" data-render-mode="{$this->escapeAttribute($renderMode)}">
-                <div class="document-header">{$header}</div>
-                <main class="document-main">{$body}</main>
-                <div class="document-footer">{$footer}</div>
+                <div class="document-header"><div class="document-section-inner">{$header}</div></div>
+                <div class="document-main"><div class="document-section-inner">{$body}</div></div>
+                <div class="document-footer"><div class="document-section-inner">{$footer}</div></div>
             </div>
         </body>
         </html>
@@ -537,5 +586,40 @@ class PdfCompilerService
         }
 
         return $value !== '' ? $value : ($renderMode === 'browser' ? 'Helvetica, Arial, sans-serif' : 'Helvetica');
+    }
+
+    private function filterStyles(array $styles, array $allowedKeys): array
+    {
+        $filtered = [];
+
+        foreach ($allowedKeys as $key) {
+            if (array_key_exists($key, $styles) && is_scalar($styles[$key]) && $styles[$key] !== '') {
+                $filtered[$key] = $styles[$key];
+            }
+        }
+
+        return $filtered;
+    }
+
+    private function scaleCssSize(string $value, float $ratio, string $fallback): string
+    {
+        if (preg_match('/^\s*([0-9]*\.?[0-9]+)\s*(px|pt|rem|em|mm|cm|in)?\s*$/i', $value, $matches) !== 1) {
+            return $fallback;
+        }
+
+        $number = (float) $matches[1];
+        $unit = $matches[2] ?? 'px';
+
+        return rtrim(rtrim(number_format($number * $ratio, 2, '.', ''), '0'), '.').$unit;
+    }
+
+    private function mutedColor(string $baseColor): string
+    {
+        $normalized = strtolower(trim($baseColor));
+
+        return match ($normalized) {
+            '#000000', '#0f172a', '#111827', '#1f2937', '#020617' => '#64748b',
+            default => '#475569',
+        };
     }
 }

@@ -348,6 +348,16 @@
                             </div>
 
                             <div v-if="supportsTextStyles">
+                                <label class="field-label">Case Transform</label>
+                                <select v-model="activeNode.styles.textTransform" class="control" @change="$emit('update')">
+                                    <option value="none">Normal</option>
+                                    <option value="uppercase">ALL CAPS</option>
+                                    <option value="lowercase">lowercase</option>
+                                    <option value="capitalize">Capitalize Words</option>
+                                </select>
+                            </div>
+
+                            <div v-if="supportsTextStyles">
                                 <label class="field-label">Text Color</label>
                                 <div class="flex items-center gap-2">
                                     <input
@@ -391,6 +401,26 @@
                             <div v-if="activeNode.type === 'image'">
                                 <label class="field-label">Width</label>
                                 <input v-model="activeNode.styles.width" type="text" class="control" placeholder="180px" @input="$emit('update')">
+                            </div>
+
+                            <div v-if="activeNode.type === 'image'">
+                                <label class="field-label">Image Align</label>
+                                <select v-model="activeNode.styles.textAlign" class="control" @change="$emit('update')">
+                                    <option value="left">left</option>
+                                    <option value="center">center</option>
+                                    <option value="right">right</option>
+                                </select>
+                            </div>
+
+                            <div v-if="activeNode.type === 'image'">
+                                <label class="field-label">Image Fit</label>
+                                <select v-model="activeNode.styles.objectFit" class="control" @change="$emit('update')">
+                                    <option value="contain">contain</option>
+                                    <option value="cover">cover</option>
+                                    <option value="fill">fill</option>
+                                    <option value="none">none</option>
+                                    <option value="scale-down">scale-down</option>
+                                </select>
                             </div>
                         </div>
                     </section>

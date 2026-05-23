@@ -33,7 +33,7 @@
                 :membership="membership"
                 :index="index"
                 :companies="availableCompanies(index)"
-                :tenant-roles="tenantRoles"
+                :tenant-roles="availableTenantRoles(membership.company_id)"
                 :errors="errors"
                 @remove="$emit('remove-membership', index)"
                 @update-company="$emit('update-company', { index, companyId: $event })"
@@ -59,9 +59,9 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    tenantRoles: {
-        type: Array,
-        default: () => [],
+    tenantRoleOptions: {
+        type: Object,
+        default: () => ({}),
     },
     errors: {
         type: Object,
@@ -82,5 +82,9 @@ const availableCompanies = (index) => {
         .filter(Boolean);
 
     return props.companies.filter((company) => !selectedIds.includes(company.id));
+};
+
+const availableTenantRoles = (companyId) => {
+    return props.tenantRoleOptions?.[companyId] ?? [];
 };
 </script>

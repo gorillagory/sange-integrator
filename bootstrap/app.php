@@ -3,9 +3,11 @@
 // bootstrap/app.php
 
 use App\Http\Middleware\AllowSuperAdminOrTenantRole;
+use App\Http\Middleware\AllowGlobalAdminOrTenantPermission;
 use App\Http\Middleware\EnsureCompanyModuleEnabled;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveSessionDomain;
+use App\Http\Middleware\UseRequestHostForViteDevServer;
 use App\Support\AppHost;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -32,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         $middleware->web(prepend: [
+            UseRequestHostForViteDevServer::class,
             ResolveSessionDomain::class,
         ]);
 
@@ -45,6 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'super_admin_or_tenant_role' => AllowSuperAdminOrTenantRole::class,
+            'global_admin_or_tenant_permission' => AllowGlobalAdminOrTenantPermission::class,
             'company_module' => EnsureCompanyModuleEnabled::class,
         ]);
     })

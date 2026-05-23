@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\ServiceRecord;
+use App\Models\ServiceRecordDocument;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -43,6 +44,64 @@ class ServiceRecordAuditService
                 'status_transition' => $transition,
             ]),
             $after
+        );
+    }
+
+    public function logServiceStatusChanged(ServiceRecord $before, ServiceRecord $after, string $transition): void
+    {
+        AuditEngine::log(
+            'RECORD',
+            'SERVICE_RECORD.SERVICE_STATUS_CHANGED',
+            array_merge($this->snapshot($after), [
+                'service_status_transition' => $transition,
+            ]),
+            array_merge($this->snapshot($before), [
+                'service_status_transition' => $transition,
+            ]),
+            $after
+        );
+    }
+
+    public function logDocumentGenerated(ServiceRecord $serviceRecord, ServiceRecordDocument $document): void
+    {
+        AuditEngine::log(
+            'RECORD',
+            'SERVICE_RECORD.DOCUMENT_GENERATED',
+            array_merge($this->snapshot($serviceRecord), [
+                'generated_document' => [
+                    'id' => $document->id,
+                    'document_type' => $document->document_type,
+                    'document_number' => $document->document_number,
+                    'status' => $document->status,
+                    'template_name' => $document->template_name,
+                    'template_code' => $document->template_code,
+                    'generated_at' => optional($document->generated_at)->toDateTimeString(),
+                ],
+            ]),
+            [],
+            $serviceRecord
+        );
+    }
+
+    public function logDocumentDownloaded(ServiceRecord $serviceRecord, ServiceRecordDocument $document): void
+    {
+        AuditEngine::log(
+            'RECORD',
+            'SERVICE_RECORD.DOCUMENT_DOWNLOADED',
+            array_merge($this->snapshot($serviceRecord), [
+                'generated_document' => [
+                    'id' => $document->id,
+                    'document_type' => $document->document_type,
+                    'document_number' => $document->document_number,
+                    'status' => $document->status,
+                    'template_name' => $document->template_name,
+                    'template_code' => $document->template_code,
+                    'generated_at' => optional($document->generated_at)->toDateTimeString(),
+                    'last_downloaded_at' => optional($document->last_downloaded_at)->toDateTimeString(),
+                ],
+            ]),
+            [],
+            $serviceRecord
         );
     }
 
@@ -94,6 +153,8 @@ class ServiceRecordAuditService
         $serviceRecord->loadMissing([
             'client:id,name',
             'clientRemarkPreset:id,title',
+            'author:id,name,email',
+            'assignedUser:id,name,email',
             'rows' => fn ($query) => $query->orderBy('sort_order'),
             'rows.schemaVector:id,service_code,service_name,display_name,version',
         ]);
@@ -102,12 +163,24 @@ class ServiceRecordAuditService
             'reference_no' => $serviceRecord->reference_no,
             'document_no' => $serviceRecord->document_no,
             'status' => $serviceRecord->status,
+            'document_status' => $serviceRecord->status,
+            'service_status' => $serviceRecord->service_status ?: 'Pending',
             'service_group_key' => $serviceRecord->service_group_key,
             'client' => $serviceRecord->client ? [
                 'id' => $serviceRecord->client->id,
                 'name' => $serviceRecord->client->name,
             ] : null,
             'contract_no' => $serviceRecord->contract_no,
+            'author' => $serviceRecord->author ? [
+                'id' => $serviceRecord->author->id,
+                'name' => $serviceRecord->author->name,
+                'email' => $serviceRecord->author->email,
+            ] : null,
+            'assigned_user' => $serviceRecord->assignedUser ? [
+                'id' => $serviceRecord->assignedUser->id,
+                'name' => $serviceRecord->assignedUser->name,
+                'email' => $serviceRecord->assignedUser->email,
+            ] : null,
             'remark_preset' => $serviceRecord->clientRemarkPreset ? [
                 'id' => $serviceRecord->clientRemarkPreset->id,
                 'title' => $serviceRecord->clientRemarkPreset->title,
@@ -162,6 +235,9 @@ class ServiceRecordAuditService
                 'Draft' => 'Returned to draft for editing',
                 default => 'Status changed',
             },
+            'SERVICE_RECORD.SERVICE_STATUS_CHANGED' => 'Service execution status changed',
+            'SERVICE_RECORD.DOCUMENT_GENERATED' => 'Document generated',
+            'SERVICE_RECORD.DOCUMENT_DOWNLOADED' => 'Document downloaded',
             default => str_replace('_', ' ', $action),
         };
     }

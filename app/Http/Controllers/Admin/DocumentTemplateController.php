@@ -307,10 +307,22 @@ class DocumentTemplateController extends Controller
         $currentCompany = view()->shared('currentCompany');
 
         if ($currentCompany instanceof Company) {
+            $currentCompany->loadMissing('mainGroupCompany');
+
             $payload['company'] = array_merge($payload['company'] ?? [], [
                 'name' => $currentCompany->name ?: ($payload['company']['name'] ?? 'Company'),
                 'logo_url' => $this->normalizePublicAssetUrl($currentCompany->logo_path) ?: ($payload['company']['logo_url'] ?? ''),
             ]);
+
+            if ($currentCompany->mainGroupCompany) {
+                $payload['main_group'] = array_merge($payload['main_group'] ?? [], [
+                    'name' => $currentCompany->mainGroupCompany->name ?: ($payload['main_group']['name'] ?? ''),
+                    'logo_url' => $this->normalizePublicAssetUrl($currentCompany->mainGroupCompany->logo_path) ?: ($payload['main_group']['logo_url'] ?? ''),
+                    'address' => is_array($currentCompany->mainGroupCompany->address)
+                        ? implode(', ', array_filter($currentCompany->mainGroupCompany->address))
+                        : (($payload['main_group']['address'] ?? '')),
+                ]);
+            }
         }
 
         return $payload;

@@ -19,7 +19,7 @@ class EnsureCompanyModuleEnabled
             abort(401);
         }
 
-        if ($user->isSuperAdmin()) {
+        if ($user->isSystemUser()) {
             return $next($request);
         }
 

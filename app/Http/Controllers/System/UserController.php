@@ -9,6 +9,8 @@ use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditEngine;
+use App\Services\RbacMatrixService;
+use App\Services\UserIdentityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,17 +21,10 @@ use Spatie\Permission\PermissionRegistrar;
 
 class UserController extends Controller
 {
-    private const GLOBAL_ROLES = [
-        'super_admin',
-        'system_admin',
-    ];
-
-    private const TENANT_ROLES = [
-        'agency_admin',
-        'travel_agent',
-        'booking_manager',
-        'document_manager',
-    ];
+    public function __construct(
+        private readonly UserIdentityService $identityService,
+        private readonly RbacMatrixService $rbacMatrix,
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -71,7 +66,7 @@ class UserController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'subdomain', 'industry']),
             'globalRoles' => $this->getAvailableGlobalRoles(),
-            'tenantRoles' => $this->getAvailableTenantRoles(),
+            'tenantRoleOptions' => $this->getAvailableTenantRoles(),
         ]);
     }
 
@@ -95,6 +90,9 @@ class UserController extends Controller
                 user: $user,
                 memberships: $request->validated('memberships', [])
             );
+
+            $identityCompany = $this->companyFromMemberships($request->validated('memberships', []));
+            $this->identityService->ensureIdentity($user, $identityCompany);
 
             AuditEngine::log('USER_ADMIN', 'USER.ACCESS_CREATED', [
                 'global_roles' => $this->getUserGlobalRoles($user),
@@ -135,6 +133,9 @@ class UserController extends Controller
                 memberships: $request->validated('memberships', [])
             );
 
+            $identityCompany = $this->companyFromMemberships($request->validated('memberships', []));
+            $this->identityService->ensureIdentity($user, $identityCompany);
+
             AuditEngine::log('USER_ADMIN', 'USER.ACCESS_UPDATED', [
                 'global_roles' => $this->getUserGlobalRoles($user),
                 'memberships' => $this->getUserMembershipPayload($user),
@@ -151,8 +152,12 @@ class UserController extends Controller
 
     private function syncGlobalRoles(User $user, array $roleNames): void
     {
-        $allowedRoleNames = array_values(array_intersect($roleNames, self::GLOBAL_ROLES));
-        $globalRoleIds = $this->getRoleIds(self::GLOBAL_ROLES);
+        $allowedRoleNames = array_values(array_intersect($roleNames, $this->availableGlobalRoleNames()));
+        $globalRoleIds = $this->visibleGlobalRolesQuery()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
 
         DB::connection('control')
             ->table('model_has_roles')
@@ -178,6 +183,21 @@ class UserController extends Controller
         $this->flushPermissionCache();
     }
 
+    private function companyFromMemberships(array $memberships): ?Company
+    {
+        $companyId = collect($memberships)
+            ->pluck('company_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->first();
+
+        if (! $companyId) {
+            return null;
+        }
+
+        return Company::query()->with('mainGroupCompany')->find($companyId);
+    }
+
     private function syncCompanyMembershipsAndTenantRoles(User $user, array $memberships): void
     {
         $normalizedMemberships = collect($memberships)
@@ -187,7 +207,7 @@ class UserController extends Controller
                     'company_id' => (int) $membership['company_id'],
                     'tenant_roles' => array_values(array_unique(array_intersect(
                         $membership['tenant_roles'] ?? [],
-                        self::TENANT_ROLES
+                        $this->availableTenantRoleNamesForCompany((int) $membership['company_id'])
                     ))),
                 ];
             })
@@ -206,19 +226,16 @@ class UserController extends Controller
 
         $user->companies()->sync($syncPayload);
 
-        $tenantRoleIds = $this->getRoleIds(self::TENANT_ROLES);
-
         DB::connection('control')
             ->table('model_has_roles')
             ->where('model_type', $user->getMorphClass())
             ->where('model_id', $user->id)
             ->where('company_id', '<>', 0)
-            ->whereIn('role_id', $tenantRoleIds)
             ->delete();
 
         foreach ($normalizedMemberships as $membership) {
             $companyId = (int) $membership['company_id'];
-            $roleIds = $this->getRoleIds($membership['tenant_roles']);
+            $roleIds = $this->getRoleIds($membership['tenant_roles'], $companyId);
 
             foreach ($roleIds as $roleId) {
                 DB::connection('control')
@@ -239,10 +256,7 @@ class UserController extends Controller
     {
         $this->ensureBaseRolesExist();
 
-        return Role::query()
-            ->where('company_id', 0)
-            ->whereIn('name', self::GLOBAL_ROLES)
-            ->orderBy('name')
+        return $this->visibleGlobalRolesQuery()
             ->get(['id', 'name'])
             ->map(fn (Role $role) => [
                 'id' => $role->id,
@@ -254,18 +268,22 @@ class UserController extends Controller
 
     private function getAvailableTenantRoles(): array
     {
-        $this->ensureBaseRolesExist();
-
-        return Role::query()
-            ->where('company_id', 0)
-            ->whereIn('name', self::TENANT_ROLES)
+        return Company::query()
+            ->where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn (Role $role) => [
-                'id' => $role->id,
-                'name' => $role->name,
+            ->get(['id'])
+            ->mapWithKeys(fn (Company $company) => [
+                (int) $company->id => Role::query()
+                    ->where('company_id', $company->id)
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                    ->map(fn (Role $role) => [
+                        'id' => (int) $role->id,
+                        'name' => $role->name,
+                    ])
+                    ->values()
+                    ->all(),
             ])
-            ->values()
             ->all();
     }
 
@@ -277,7 +295,7 @@ class UserController extends Controller
             ->where('model_has_roles.model_type', $user->getMorphClass())
             ->where('model_has_roles.model_id', $user->id)
             ->where('model_has_roles.company_id', 0)
-            ->whereIn('roles.name', self::GLOBAL_ROLES)
+            ->whereNotIn('roles.name', $this->rbacMatrix->defaultTenantRoleNames())
             ->orderBy('roles.name')
             ->pluck('roles.name')
             ->values()
@@ -324,7 +342,6 @@ class UserController extends Controller
             ->where('model_has_roles.model_type', $user->getMorphClass())
             ->where('model_has_roles.model_id', $user->id)
             ->where('model_has_roles.company_id', $companyId)
-            ->whereIn('roles.name', self::TENANT_ROLES)
             ->orderBy('roles.name')
             ->pluck('roles.name')
             ->values()
@@ -334,22 +351,46 @@ class UserController extends Controller
     private function ensureBaseRolesExist(): void
     {
         app(PermissionRegistrar::class)->setPermissionsTeamId(0);
-
-        foreach ([...self::GLOBAL_ROLES, ...self::TENANT_ROLES] as $roleName) {
-            Role::findOrCreate($roleName, 'web');
-        }
+        $this->rbacMatrix->bootstrapGlobalRoles();
 
         $this->flushPermissionCache();
     }
 
-    private function getRoleIds(array $roleNames): array
+    private function visibleGlobalRolesQuery()
+    {
+        return Role::query()
+            ->where('company_id', 0)
+            ->whereNotIn('name', $this->rbacMatrix->defaultTenantRoleNames())
+            ->orderByRaw("CASE WHEN name = 'super_admin' THEN 0 ELSE 1 END")
+            ->orderBy('name');
+    }
+
+    private function availableGlobalRoleNames(): array
+    {
+        return $this->visibleGlobalRolesQuery()
+            ->pluck('name')
+            ->values()
+            ->all();
+    }
+
+    private function availableTenantRoleNamesForCompany(int $companyId): array
+    {
+        return Role::query()
+            ->where('company_id', $companyId)
+            ->orderBy('name')
+            ->pluck('name')
+            ->values()
+            ->all();
+    }
+
+    private function getRoleIds(array $roleNames, int $companyId = 0): array
     {
         if ($roleNames === []) {
             return [];
         }
 
         return Role::query()
-            ->where('company_id', 0)
+            ->where('company_id', $companyId)
             ->whereIn('name', $roleNames)
             ->pluck('id')
             ->map(fn ($id) => (int) $id)

@@ -268,6 +268,10 @@
                                                     <p class="mt-2 text-xs font-medium text-slate-500">
                                                         {{ prettifyServiceGroup(serviceRecord.service_group_key) }}
                                                     </p>
+                                                    <div class="mt-2 space-y-1 text-[11px] text-slate-500">
+                                                        <p><span class="font-semibold text-slate-600">Author:</span> {{ serviceRecord.author?.name || 'Legacy / System' }}</p>
+                                                        <p><span class="font-semibold text-slate-600">Assigned:</span> {{ serviceRecord.assigned_user?.name || 'Unassigned' }}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>

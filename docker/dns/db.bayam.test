@@ -1,0 +1,20 @@
+$ORIGIN bayam.test.
+$TTL 60
+
+@   IN  SOA ns1.bayam.test. admin.bayam.test. (
+        2026051901 ; serial
+        120        ; refresh
+        60         ; retry
+        1209600    ; expire
+        60 )       ; minimum
+
+    IN  NS  ns1.bayam.test.
+
+ns1 IN  A     100.73.219.44
+ns1 IN  AAAA  fd7a:115c:a1e0::5634:db2c
+
+@   IN  A     100.73.219.44
+@   IN  AAAA  fd7a:115c:a1e0::5634:db2c
+
+*   IN  A     100.73.219.44
+*   IN  AAAA  fd7a:115c:a1e0::5634:db2c

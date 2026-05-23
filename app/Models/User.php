@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'username', 'email', 'digital_id', 'image_path', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -21,6 +21,7 @@ class User extends Authenticatable
     use Auditable, HasFactory, Notifiable, HasRoles;
 
     protected $connection = 'control';
+    protected $appends = ['image_url'];
 
     public function companies(): BelongsToMany
     {
@@ -67,6 +68,25 @@ class User extends Authenticatable
             ->where('companies.is_active', true)
             ->orderBy('companies.name')
             ->first();
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        $path = $this->image_path;
+
+        if (! is_string($path) || trim($path) === '') {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, 'data:')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, '/storage/')) {
+            return $path;
+        }
+
+        return '/storage/'.ltrim($path, '/');
     }
 
     private function hasGlobalRole(string $roleName): bool

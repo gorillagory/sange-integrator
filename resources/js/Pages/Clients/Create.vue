@@ -70,6 +70,34 @@
                                 <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">HQ Email <span class="text-red-500">*</span></label>
                                 <TextInput type="email" v-model="form.hq_contact_email" :error="form.errors.hq_contact_email" placeholder="ahmad@company.com" />
                             </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Client Address</label>
+                                <textarea
+                                    v-model="form.address"
+                                    rows="3"
+                                    class="block w-full rounded-lg border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)] transition-colors"
+                                    placeholder="Headquarters or primary client address..."
+                                ></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Client Logo</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                                    @change="form.logo = $event.target.files?.[0] || null"
+                                >
+                                <p class="mt-1 text-xs text-gray-400">Optional. PNG, JPG, or WEBP up to 3MB.</p>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Client Profile</label>
+                                <textarea
+                                    v-model="form.profile"
+                                    rows="4"
+                                    class="block w-full rounded-lg border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-[var(--brand-500)] focus:ring-[var(--brand-500)] transition-colors"
+                                    placeholder="Operating notes, profile summary, approval style, or any identity context helpful to the team..."
+                                ></textarea>
+                            </div>
                         </div>
                     </div>
                 </DataCard>
@@ -159,6 +187,9 @@ const form = useForm({
     registration_number: '',
     hq_contact_person: '',
     hq_contact_email: '',
+    address: '',
+    profile: '',
+    logo: null,
 
     // Local Contracts Array
     contracts: [
@@ -185,7 +216,8 @@ const removeContract = (index) => {
 };
 
 const submit = () => {
-    // 🛠️ FIXED: Bypassed Ziggy and used the exact URL path
-    form.post('/clients');
+    form.post('/clients', {
+        forceFormData: true,
+    });
 };
 </script>

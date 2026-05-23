@@ -110,6 +110,18 @@ class AppHost
         return rtrim($value, '.');
     }
 
+    public static function formatHostForUrl(string $host): string
+    {
+        $value = trim($host);
+        $value = trim($value, '[]');
+
+        if (filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return '['.strtolower($value).']';
+        }
+
+        return self::normalizeHost($value);
+    }
+
     public static function isSystemHost(string $host): bool
     {
         return self::normalizeHost($host) === self::systemHost();

@@ -29,6 +29,7 @@ export function defaultStyles() {
         fontWeight: 'normal',
         color: '#1f2937',
         textAlign: 'left',
+        textTransform: 'none',
         margin: '0px',
         backgroundColor: 'transparent',
         borderRadius: '0px',
@@ -95,6 +96,7 @@ export function makeBlock(type) {
                     padding: '0px',
                     margin: '0px',
                     display: 'block',
+                    textAlign: 'left',
                 },
             };
 

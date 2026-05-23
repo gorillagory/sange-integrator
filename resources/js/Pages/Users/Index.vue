@@ -94,7 +94,7 @@
                             Tenant Roles
                         </div>
                         <div class="mt-3 text-4xl font-black text-white">
-                            {{ tenantRoles.length }}
+                            {{ totalTenantRoleOptions }}
                         </div>
                     </div>
                 </div>
@@ -112,7 +112,7 @@
                 :user="selectedUser"
                 :companies="companies"
                 :global-roles="globalRoles"
-                :tenant-roles="tenantRoles"
+                :tenant-role-options="tenantRoleOptions"
                 @close="closeModal"
             />
         </div>
@@ -143,9 +143,9 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    tenantRoles: {
-        type: Array,
-        default: () => [],
+    tenantRoleOptions: {
+        type: Object,
+        default: () => ({}),
     },
 });
 
@@ -162,6 +162,8 @@ watch(
 );
 
 const users = computed(() => props.users);
+const totalTenantRoleOptions = computed(() => Object.values(props.tenantRoleOptions)
+    .reduce((count, roles) => count + (Array.isArray(roles) ? roles.length : 0), 0));
 
 const applySearch = () => {
     router.get(

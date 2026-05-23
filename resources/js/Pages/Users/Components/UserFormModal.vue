@@ -154,7 +154,7 @@
                                 <MembershipEditor
                                     :memberships="form.memberships"
                                     :companies="companies"
-                                    :tenant-roles="tenantRoles"
+                                    :tenant-role-options="tenantRoleOptions"
                                     :errors="form.errors"
                                     @add-membership="addMembership"
                                     @remove-membership="removeMembership"
@@ -214,9 +214,9 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    tenantRoles: {
-        type: Array,
-        default: () => [],
+    tenantRoleOptions: {
+        type: Object,
+        default: () => ({}),
     },
 });
 
@@ -366,7 +366,7 @@ const submit = () => {
                 emit('close');
                 router.reload({
                     preserveScroll: true,
-                    only: ['users', 'filters', 'companies', 'globalRoles', 'tenantRoles'],
+                    only: ['users', 'filters', 'companies', 'globalRoles', 'tenantRoleOptions'],
                 });
             },
         });
@@ -380,7 +380,7 @@ const submit = () => {
             emit('close');
             router.reload({
                 preserveScroll: true,
-                only: ['users', 'filters', 'companies', 'globalRoles', 'tenantRoles'],
+                only: ['users', 'filters', 'companies', 'globalRoles', 'tenantRoleOptions'],
             });
         },
     });
